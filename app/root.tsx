@@ -41,8 +41,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { WebContainerProvider } from "./context/WebContainerContext";
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <WebContainerProvider>
+      <Outlet />
+    </WebContainerProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
