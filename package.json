@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
+    "@ai-sdk/openai": "^2.0.77",
     "@monaco-editor/react": "^4.7.0",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",

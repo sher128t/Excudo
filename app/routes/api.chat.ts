@@ -1,4 +1,4 @@
-import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import type { Route } from "./+types/api.chat";
@@ -7,7 +7,7 @@ export async function action({ request }: Route.ActionArgs) {
     const { messages } = await request.json();
 
     const result = streamText({
-        model: anthropic("claude-3-5-sonnet-20240620"),
+        model: openai("gpt-4o"),
         messages,
         system: `You are a coding assistant. You receive a user prompt and must output a list of file actions (create, update, delete) to build the requested app. 
     Do not just explain code; output the full code for the files.
