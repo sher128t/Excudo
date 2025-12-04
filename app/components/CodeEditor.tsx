@@ -1,4 +1,4 @@
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { useAtom } from "jotai";
 import { selectedFileAtom } from "~/store/atoms";
 import { useWebContainer } from "~/context/WebContainerContext";
