@@ -44,9 +44,28 @@ export function Preview() {
                     // Has Next.js as dependency but no script
                     runCommand("npx", ["next", "dev"]);
                 } else if (deps.express || deps.fastify || deps.koa) {
-                    // Backend framework - try to find and run main file
-                    const main = packageJson.main || "index.js";
-                    runCommand("node", [main]);
+                    // Backend framework - find and run the entry point
+                    let entryPoint = packageJson.main;
+
+                    if (!entryPoint) {
+                        // Check for common entry point files
+                        const commonFiles = ["server.js", "app.js", "index.js", "main.js"];
+                        for (const file of commonFiles) {
+                            try {
+                                await webcontainer.fs.readFile(file, "utf-8");
+                                entryPoint = file;
+                                break;
+                            } catch {
+                                // File doesn't exist, try next
+                            }
+                        }
+                    }
+
+                    if (entryPoint) {
+                        runCommand("node", [entryPoint]);
+                    } else {
+                        setStatus("Error: No entry point found");
+                    }
                 } else {
                     // Unknown npm project - try npx serve as fallback
                     runCommand("npx", ["-y", "serve", "."]);
