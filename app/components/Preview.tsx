@@ -8,7 +8,8 @@ export function Preview() {
     const startServer = async () => {
         setIsStarting(true);
         try {
-            await runCommand("npx", ["serve", "."]);
+            // -y auto-confirms package installation
+            await runCommand("npx", ["-y", "serve", "."]);
         } catch (err) {
             console.error("Failed to start server:", err);
         }
