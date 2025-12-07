@@ -10,6 +10,13 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 
+export function headers() {
+  return {
+    "Cross-Origin-Embedder-Policy": "require-corp",
+    "Cross-Origin-Opener-Policy": "same-origin",
+  };
+}
+
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {

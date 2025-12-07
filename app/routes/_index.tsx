@@ -1,11 +1,18 @@
-import { Sidebar } from "~/components/Sidebar";
-import { CodeEditor } from "~/components/CodeEditor";
-import { Preview } from "~/components/Preview";
-import { Terminal } from "~/components/Terminal";
-import { ChatInterface } from "~/components/ChatInterface";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Sidebar } from "~/components/Sidebar";
+import { ChatInterface } from "~/components/ChatInterface";
+import { CodeEditor } from "~/components/CodeEditor";
+import { Terminal } from "~/components/Terminal";
+import { Preview } from "~/components/Preview";
+import { useEffect, useState } from "react";
 
 export default function Index() {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     return (
         <div className="h-screen w-screen bg-gray-950 text-white flex overflow-hidden">
             {/* Sidebar */}
@@ -24,11 +31,11 @@ export default function Index() {
                             <Panel defaultSize={60} minSize={20}>
                                 <PanelGroup direction="vertical">
                                     <Panel defaultSize={70} minSize={20}>
-                                        <CodeEditor />
+                                        {isMounted ? <CodeEditor /> : <div className="h-full bg-[#1e1e1e]" />}
                                     </Panel>
                                     <PanelResizeHandle className="h-1 bg-gray-800 hover:bg-blue-500 transition-colors" />
                                     <Panel defaultSize={30} minSize={10}>
-                                        <Terminal />
+                                        {isMounted ? <Terminal /> : <div className="h-full bg-[#1e1e1e]" />}
                                     </Panel>
                                 </PanelGroup>
                             </Panel>

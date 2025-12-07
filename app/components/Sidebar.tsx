@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Folder, File, RefreshCw } from "lucide-react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useSetAtom } from "jotai";
 import { selectedFileAtom } from "~/store/atoms";
@@ -83,9 +82,9 @@ export function Sidebar() {
                             }}
                         >
                             {node.kind === "directory" ? (
-                                <Folder size={14} className="text-blue-400" />
+                                <span className="text-blue-400">[D]</span>
                             ) : (
-                                <File size={14} className="text-gray-400" />
+                                <span className="text-gray-400">[F]</span>
                             )}
                             <span>{node.name}</span>
                         </div>
@@ -101,7 +100,7 @@ export function Sidebar() {
             <div className="p-4 border-b border-gray-800 font-bold flex justify-between items-center">
                 <span>Explorer</span>
                 <button onClick={refreshFiles} className="hover:text-blue-400">
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                    {refreshing ? "..." : "R"}
                 </button>
             </div>
             <div className="flex-1 p-2 overflow-y-auto">

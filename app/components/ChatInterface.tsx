@@ -1,14 +1,45 @@
-import { useChat } from "ai/react";
-import { Send, Loader2 } from "lucide-react";
+import { useChat } from "@ai-sdk/react";
+import { useEffect, useState } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
-import { useEffect } from "react";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
-    const { messages, input, handleInputChange, handleSubmit, isLoading, addToolResult } = useChat({
+    const [input, setInput] = useState("");
+
+    const chatHelpers = useChat({
         api: "/api/chat",
         maxSteps: 5,
+        onError: (error) => {
+            console.error("Chat error:", error);
+            alert(`Chat error: ${error.message}`);
+        },
+        onFinish: () => {
+            console.log("Chat finished");
+        },
     });
+
+    const { messages, handleSubmit, isLoading, addToolResult, sendMessage } = chatHelpers;
+
+    useEffect(() => {
+        console.log("Messages updated:", messages);
+    }, [messages]);
+
+    useEffect(() => {
+        // console.log("ChatHelpers:", Object.keys(chatHelpers));
+    }, [chatHelpers]);
+
+    const handleSend = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!input.trim()) return;
+
+        try {
+            // @ts-ignore
+            await sendMessage({ role: "user", content: input });
+            setInput("");
+        } catch (err) {
+            console.error("sendMessage failed:", err);
+        }
+    };
 
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
@@ -54,7 +85,7 @@ export function ChatInterface() {
         <div className="flex flex-col h-full bg-gray-900 text-white border-r border-gray-800">
             <div className="p-4 border-b border-gray-800 font-bold flex justify-between items-center">
                 <span>AI Assistant</span>
-                {isLoading && <Loader2 className="animate-spin text-blue-400" size={16} />}
+                {isLoading && <span className="text-blue-400 text-xs">Loading...</span>}
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
@@ -72,8 +103,8 @@ export function ChatInterface() {
                     >
                         <div
                             className={`max-w-[85%] rounded-lg p-3 ${m.role === "user"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-gray-800 text-gray-200"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-800 text-gray-200"
                                 }`}
                         >
                             <div className="whitespace-pre-wrap text-sm">{m.content}</div>
@@ -93,14 +124,14 @@ export function ChatInterface() {
             </div>
 
             <div className="p-4 border-t border-gray-800">
-                <form onSubmit={handleSubmit} className="relative">
+                <form onSubmit={handleSend} className="relative">
                     <textarea
                         value={input}
-                        onChange={handleInputChange}
+                        onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
-                                handleSubmit(e as any);
+                                handleSend();
                             }
                         }}
                         className="w-full bg-gray-800 text-white rounded p-3 pr-10 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -112,7 +143,7 @@ export function ChatInterface() {
                         disabled={isLoading || !input.trim()}
                         className="absolute bottom-3 right-3 p-1 hover:bg-gray-700 rounded text-blue-400 disabled:opacity-50"
                     >
-                        <Send size={18} />
+                        Send
                     </button>
                 </form>
             </div>
