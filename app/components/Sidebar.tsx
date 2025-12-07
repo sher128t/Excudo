@@ -21,8 +21,15 @@ export function Sidebar() {
         if (!webcontainer) return [];
         try {
             const entries = await webcontainer.fs.readdir(dir, { withFileTypes: true });
+
+            // Filter out node_modules and hidden folders
+            const filteredEntries = entries.filter(entry => {
+                const name = entry.name;
+                return name !== "node_modules" && !name.startsWith(".");
+            });
+
             const nodes: FileNode[] = await Promise.all(
-                entries.map(async (entry) => {
+                filteredEntries.map(async (entry) => {
                     const path = dir === "/" ? entry.name : `${dir}/${entry.name}`;
                     if (entry.isDirectory()) {
                         return {
