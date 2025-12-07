@@ -5,12 +5,12 @@ import type { Route } from "./+types/api.chat";
 export async function action({ request }: Route.ActionArgs) {
     const { messages } = await request.json();
 
-    const result = streamText({
+    const result = await streamText({
         model: openai("gpt-4o"),
         messages,
         system: `You are a helpful coding assistant.`,
     });
 
-    // Use pipeDataStreamToResponse which is the correct method
-    return result.pipeDataStreamToResponse(new Response());
+    // In AI SDK v3, use toAIStreamResponse
+    return result.toAIStreamResponse();
 }
