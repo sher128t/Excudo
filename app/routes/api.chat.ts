@@ -11,12 +11,6 @@ export async function action({ request }: Route.ActionArgs) {
         system: `You are a helpful coding assistant.`,
     });
 
-    // Return using the textStream property with proper headers
-    return new Response(result.textStream, {
-        headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-        },
-    });
+    // Use pipeDataStreamToResponse which is the correct method
+    return result.pipeDataStreamToResponse(new Response());
 }
