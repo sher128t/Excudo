@@ -57,6 +57,18 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
 
     const writeFile = async (path: string, content: string) => {
         if (!webcontainer) throw new Error("WebContainer not booted");
+
+        // Create parent directories if they don't exist
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length > 1) {
+            const dirPath = parts.slice(0, -1).join('/');
+            try {
+                await webcontainer.fs.mkdir(dirPath, { recursive: true });
+            } catch (e) {
+                // Directory might already exist, ignore error
+            }
+        }
+
         await webcontainer.fs.writeFile(path, content);
     };
 
