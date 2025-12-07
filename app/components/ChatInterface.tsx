@@ -27,6 +27,9 @@ export function ChatInterface() {
         // console.log("ChatHelpers:", Object.keys(chatHelpers));
     }, [chatHelpers]);
 
+    // Temporarily disabled to prevent infinite loop
+    // TODO: Fix tool result submission logic
+    /*
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
         if (!lastMessage || !lastMessage.toolInvocations) return;
@@ -66,6 +69,7 @@ export function ChatInterface() {
 
         processToolCalls();
     }, [messages, writeFile, runCommand, addToolResult]);
+    */
 
     return (
         <div className="flex flex-col h-full bg-gray-900 text-white border-r border-gray-800">
