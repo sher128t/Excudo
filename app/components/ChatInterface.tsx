@@ -27,49 +27,40 @@ export function ChatInterface() {
         // console.log("ChatHelpers:", Object.keys(chatHelpers));
     }, [chatHelpers]);
 
-    // Temporarily disabled to prevent infinite loop
-    // TODO: Fix tool result submission logic
-    /*
+    // Process tool calls and execute them (without sending results back to avoid loop)
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
         if (!lastMessage || !lastMessage.toolInvocations) return;
 
         const processToolCalls = async () => {
-            for (const toolInvocation of lastMessage.toolInvocations) {
-                if (toolInvocation.state !== 'call') continue;
+            for (const toolInvocation of lastMessage.toolInvocations as any[]) {
+                // Skip if already processed
+                if (toolInvocation.state === 'result') continue;
 
-                const { toolName, toolCallId, args } = toolInvocation;
-                let result = "Success";
+                const { toolName, args } = toolInvocation;
 
                 try {
                     console.log(`Executing tool: ${toolName}`, args);
 
                     if (toolName === "createFile" || toolName === "updateFile") {
                         await writeFile(args.path, args.content);
-                        result = `File ${args.path} created/updated.`;
+                        console.log(`File ${args.path} created/updated.`);
                     } else if (toolName === "deleteFile") {
-                        // await deleteFile(args.path); // TODO: Implement deleteFile in context
-                        result = `File ${args.path} deleted (simulated).`;
+                        console.log(`File ${args.path} deleted (simulated).`);
                     } else if (toolName === "runCommand") {
                         const [cmd, ...cmdArgs] = args.command.split(" ");
                         await runCommand(cmd, cmdArgs);
-                        result = `Command ${args.command} executed.`;
+                        console.log(`Command ${args.command} executed.`);
                     }
                 } catch (error) {
                     console.error(`Error executing ${toolName}:`, error);
-                    result = `Error: ${error instanceof Error ? error.message : String(error)}`;
                 }
-
-                addToolResult({
-                    toolCallId,
-                    result,
-                });
+                // Note: Not calling addToolResult to avoid infinite loop
             }
         };
 
         processToolCalls();
-    }, [messages, writeFile, runCommand, addToolResult]);
-    */
+    }, [messages, writeFile, runCommand]);
 
     return (
         <div className="flex flex-col h-full bg-gray-900 text-white border-r border-gray-800">
