@@ -4,7 +4,6 @@ import { useWebContainer } from "~/context/WebContainerContext";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
-    const [input, setInput] = useState("");
 
     const chatHelpers = useChat({
         api: "/api/chat",
@@ -18,7 +17,7 @@ export function ChatInterface() {
         },
     });
 
-    const { messages, handleSubmit, isLoading, addToolResult, sendMessage } = chatHelpers;
+    const { messages, input, handleInputChange, handleSubmit, isLoading, addToolResult } = chatHelpers;
 
     useEffect(() => {
         console.log("Messages updated:", messages);
@@ -27,19 +26,6 @@ export function ChatInterface() {
     useEffect(() => {
         // console.log("ChatHelpers:", Object.keys(chatHelpers));
     }, [chatHelpers]);
-
-    const handleSend = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (!input.trim()) return;
-
-        try {
-            // @ts-ignore
-            await sendMessage({ role: "user", content: input });
-            setInput("");
-        } catch (err) {
-            console.error("sendMessage failed:", err);
-        }
-    };
 
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
@@ -124,14 +110,14 @@ export function ChatInterface() {
             </div>
 
             <div className="p-4 border-t border-gray-800">
-                <form onSubmit={handleSend} className="relative">
+                <form onSubmit={handleSubmit} className="relative">
                     <textarea
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleInputChange}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
-                                handleSend();
+                                handleSubmit(e);
                             }
                         }}
                         className="w-full bg-gray-800 text-white rounded p-3 pr-10 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
