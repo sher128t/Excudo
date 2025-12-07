@@ -11,26 +11,50 @@ export function Preview() {
 
         setIsStarting(true);
         try {
-            // Check if package.json exists (indicates npm project)
-            let hasPackageJson = false;
+            // Try to read package.json to understand the project
+            let packageJson: any = null;
             try {
-                await webcontainer.fs.readFile("package.json", "utf-8");
-                hasPackageJson = true;
+                const content = await webcontainer.fs.readFile("package.json", "utf-8");
+                packageJson = JSON.parse(content);
             } catch {
-                hasPackageJson = false;
+                packageJson = null;
             }
 
-            if (hasPackageJson) {
-                // It's a React/Vite/npm project - need to install and run dev server
+            if (packageJson) {
+                // It's an npm project - install dependencies first
                 setStatus("Installing dependencies...");
                 await runCommand("npm", ["install"]);
+
+                // Determine the best command to run based on scripts and dependencies
+                const scripts = packageJson.scripts || {};
+                const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+
                 setStatus("Starting dev server...");
-                // Use npx vite directly since package.json might not have scripts
-                runCommand("npx", ["vite"]);
+
+                if (scripts.dev) {
+                    // Has a dev script - use it (works for Vite, Next.js, etc.)
+                    runCommand("npm", ["run", "dev"]);
+                } else if (scripts.start) {
+                    // Has a start script - use it (works for Create React App, Express, etc.)
+                    runCommand("npm", ["start"]);
+                } else if (deps.vite || deps["@vitejs/plugin-react"]) {
+                    // Has Vite as dependency but no script - run directly
+                    runCommand("npx", ["vite"]);
+                } else if (deps.next) {
+                    // Has Next.js as dependency but no script
+                    runCommand("npx", ["next", "dev"]);
+                } else if (deps.express || deps.fastify || deps.koa) {
+                    // Backend framework - try to find and run main file
+                    const main = packageJson.main || "index.js";
+                    runCommand("node", [main]);
+                } else {
+                    // Unknown npm project - try npx serve as fallback
+                    runCommand("npx", ["-y", "serve", "."]);
+                }
             } else {
-                // Simple static files - use serve
+                // No package.json - serve static files
                 setStatus("Starting static server...");
-                await runCommand("npx", ["-y", "serve", "."]);
+                runCommand("npx", ["-y", "serve", "."]);
             }
         } catch (err) {
             console.error("Failed to start server:", err);
