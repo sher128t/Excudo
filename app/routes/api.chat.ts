@@ -6,14 +6,33 @@ import type { Route } from "./+types/api.chat";
 const SYSTEM_PROMPT = `You are an expert web developer. Create stunning, professional websites using React, Vite, and Tailwind CSS.
 
 ALWAYS create these files for React projects:
-1. package.json (with scripts.dev: "vite")
+1. package.json (MUST use EXACT format below)
 2. vite.config.js
 3. tailwind.config.js  
 4. postcss.config.js
 5. index.html
 6. src/index.css (with @tailwind directives)
 7. src/main.jsx (using createRoot)
-8. src/App.jsx (main component)
+8. src/App.jsx (main component with full website content)
+
+EXACT package.json format (copy this exactly, just change the name):
+{
+  "name": "my-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.0.0",
+    "autoprefixer": "^10.0.0"
+  }
+}
 
 DESIGN RULES:
 - Use Tailwind CSS classes, never plain CSS

@@ -1,9 +1,10 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
+    const processedToolCalls = useRef<Set<string>>(new Set());
 
     const chatHelpers = useChat({
         api: "/api/chat",
@@ -29,33 +30,39 @@ export function ChatInterface() {
 
     // Process tool calls and execute them (without sending results back to avoid loop)
     useEffect(() => {
-        const lastMessage = messages[messages.length - 1];
-        if (!lastMessage || !lastMessage.toolInvocations) return;
-
         const processToolCalls = async () => {
-            for (const toolInvocation of lastMessage.toolInvocations as any[]) {
-                // Skip if already processed
-                if (toolInvocation.state === 'result') continue;
+            for (const message of messages) {
+                if (!message.toolInvocations) continue;
 
-                const { toolName, args } = toolInvocation;
+                for (const toolInvocation of message.toolInvocations as any[]) {
+                    // Skip if already processed using the tool call ID
+                    if (processedToolCalls.current.has(toolInvocation.toolCallId)) continue;
 
-                try {
-                    console.log(`Executing tool: ${toolName}`, args);
+                    // Skip if not in 'call' state (e.g., already has 'result')
+                    if (toolInvocation.state !== 'call') continue;
 
-                    if (toolName === "createFile" || toolName === "updateFile") {
-                        await writeFile(args.path, args.content);
-                        console.log(`File ${args.path} created/updated.`);
-                    } else if (toolName === "deleteFile") {
-                        console.log(`File ${args.path} deleted (simulated).`);
-                    } else if (toolName === "runCommand") {
-                        const [cmd, ...cmdArgs] = args.command.split(" ");
-                        await runCommand(cmd, cmdArgs);
-                        console.log(`Command ${args.command} executed.`);
+                    // Mark as processed BEFORE executing to prevent race conditions
+                    processedToolCalls.current.add(toolInvocation.toolCallId);
+
+                    const { toolName, args } = toolInvocation;
+
+                    try {
+                        console.log(`Executing tool: ${toolName}`, args);
+
+                        if (toolName === "createFile" || toolName === "updateFile") {
+                            await writeFile(args.path, args.content);
+                            console.log(`File ${args.path} created/updated.`);
+                        } else if (toolName === "deleteFile") {
+                            console.log(`File ${args.path} deleted (simulated).`);
+                        } else if (toolName === "runCommand") {
+                            const [cmd, ...cmdArgs] = args.command.split(" ");
+                            await runCommand(cmd, cmdArgs);
+                            console.log(`Command ${args.command} executed.`);
+                        }
+                    } catch (error) {
+                        console.error(`Error executing ${toolName}:`, error);
                     }
-                } catch (error) {
-                    console.error(`Error executing ${toolName}:`, error);
                 }
-                // Note: Not calling addToolResult to avoid infinite loop
             }
         };
 
