@@ -9,7 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.53",
+    "@ai-sdk/anthropic": "^0.0.40",
     "@ai-sdk/openai": "^0.0.54",
     "@ai-sdk/react": "^0.0.62",
     "@monaco-editor/react": "^4.7.0",
