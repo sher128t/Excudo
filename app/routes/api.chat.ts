@@ -1,4 +1,4 @@
-import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import type { Route } from "./+types/api.chat";
@@ -189,41 +189,41 @@ Format: https://images.unsplash.com/{photo-id}?w=800&h=600&fit=crop
 Remember: Every website you create should look like it could be a real SaaS landing page or professional business site. No amateur-looking designs!`;
 
 export async function action({ request }: Route.ActionArgs) {
-    const { messages } = await request.json();
+  const { messages } = await request.json();
 
-    const result = await streamText({
-        model: anthropic("claude-3-5-sonnet-20241022"), // Claude is better at following design instructions
-        messages,
-        system: SYSTEM_PROMPT,
-        tools: {
-            createFile: tool({
-                description: "Create a new file with the specified content",
-                parameters: z.object({
-                    path: z.string().describe("File path like 'src/App.jsx' or 'package.json'"),
-                    content: z.string().describe("The complete file content"),
-                }),
-            }),
-            updateFile: tool({
-                description: "Update an existing file with new content",
-                parameters: z.object({
-                    path: z.string(),
-                    content: z.string(),
-                }),
-            }),
-            deleteFile: tool({
-                description: "Delete a file",
-                parameters: z.object({
-                    path: z.string(),
-                }),
-            }),
-            runCommand: tool({
-                description: "Run a shell command in the terminal",
-                parameters: z.object({
-                    command: z.string(),
-                }),
-            }),
-        },
-    });
+  const result = await streamText({
+    model: openai("gpt-4o"), // Using GPT-4o with enhanced design prompt
+    messages,
+    system: SYSTEM_PROMPT,
+    tools: {
+      createFile: tool({
+        description: "Create a new file with the specified content",
+        parameters: z.object({
+          path: z.string().describe("File path like 'src/App.jsx' or 'package.json'"),
+          content: z.string().describe("The complete file content"),
+        }),
+      }),
+      updateFile: tool({
+        description: "Update an existing file with new content",
+        parameters: z.object({
+          path: z.string(),
+          content: z.string(),
+        }),
+      }),
+      deleteFile: tool({
+        description: "Delete a file",
+        parameters: z.object({
+          path: z.string(),
+        }),
+      }),
+      runCommand: tool({
+        description: "Run a shell command in the terminal",
+        parameters: z.object({
+          command: z.string(),
+        }),
+      }),
+    },
+  });
 
-    return result.toAIStreamResponse();
+  return result.toAIStreamResponse();
 }
