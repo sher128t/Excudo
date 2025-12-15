@@ -8,7 +8,7 @@ export function ChatInterface() {
 
     const chatHelpers = useChat({
         api: "/api/chat",
-        maxSteps: 15,
+        maxSteps: 25,
         onError: (error) => {
             console.error("Chat error:", error);
             alert(`Chat error: ${error.message}`);
