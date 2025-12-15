@@ -57,8 +57,8 @@ Remember: Create intelligent, context-appropriate designs. A fitness app should 
 export async function action({ request }: Route.ActionArgs) {
   const { messages } = await request.json();
 
-  const result = await streamText({
-    model: anthropic("claude-3-5-sonnet-20241022"),
+  const result = streamText({
+    model: anthropic("claude-sonnet-4-5-20241022"),
     messages,
     system: SYSTEM_PROMPT,
     maxTokens: 32000,
@@ -92,8 +92,9 @@ export async function action({ request }: Route.ActionArgs) {
     },
   });
 
-  return result.toAIStreamResponse();
+  return result.toDataStreamResponse();
 }
+
 
 
 

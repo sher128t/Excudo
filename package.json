@@ -9,14 +9,14 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.40",
+    "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/openai": "^0.0.54",
-    "@ai-sdk/react": "^0.0.62",
+    "@ai-sdk/react": "^1.0.0",
     "@monaco-editor/react": "^4.7.0",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",
     "@webcontainer/api": "^1.6.1",
-    "ai": "^3.3.0",
+    "ai": "^4.0.0",
     "isbot": "^5.1.31",
     "jotai": "^2.15.2",
     "lucide-react": "^0.555.0",
