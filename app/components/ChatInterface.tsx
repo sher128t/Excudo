@@ -8,7 +8,7 @@ export function ChatInterface() {
 
     const chatHelpers = useChat({
         api: "/api/chat",
-        maxSteps: 5,
+        maxSteps: 15,
         onError: (error) => {
             console.error("Chat error:", error);
             alert(`Chat error: ${error.message}`);
@@ -81,8 +81,8 @@ export function ChatInterface() {
                     <div
                         key={message.id}
                         className={`p-3 rounded-lg text-sm ${message.role === "user"
-                                ? "bg-blue-600 ml-8"
-                                : "bg-gray-800 mr-8"
+                            ? "bg-blue-600 ml-8"
+                            : "bg-gray-800 mr-8"
                             }`}
                     >
                         <div className="whitespace-pre-wrap">{message.content}</div>
