@@ -1,4 +1,4 @@
-import { atom } from "jotai";
+import { atom } from 'jotai';
 
 export const selectedFileAtom = atom<string | null>(null);
-export const fileContentAtom = atom<string>("");
+export const fileContentAtom = atom<string>('');
