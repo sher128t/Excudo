@@ -58,7 +58,7 @@ export async function action({ request }: Route.ActionArgs) {
   const { messages } = await request.json();
 
   const result = streamText({
-    model: anthropic("claude-sonnet-4-5-20241022"),
+    model: anthropic("claude-sonnet-4-5-20250929"),
     messages,
     system: SYSTEM_PROMPT,
     maxTokens: 32000,
