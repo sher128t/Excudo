@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles } from "lucide-react";
+import { ActionChips } from "./ActionChips";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
@@ -19,7 +20,7 @@ export function ChatInterface() {
         },
     });
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = chatHelpers;
+    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append } = chatHelpers;
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -125,8 +126,8 @@ export function ChatInterface() {
                         )}
                         <div
                             className={`max-w-[85%] rounded-xl px-4 py-3 text-sm ${message.role === "user"
-                                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                                    : "bg-[#12121a] border border-[#1e1e2e] text-gray-300"
+                                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                : "bg-[#12121a] border border-[#1e1e2e] text-gray-300"
                                 }`}
                         >
                             <div className="whitespace-pre-wrap">{message.content}</div>
@@ -176,6 +177,14 @@ export function ChatInterface() {
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Action Chips */}
+            <ActionChips
+                onAction={(prompt) => {
+                    append({ role: "user", content: prompt });
+                }}
+                disabled={isLoading}
+            />
 
             {/* Input */}
             <form onSubmit={handleSubmit} className="p-4 border-t border-[#1e1e2e]">
