@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { createClient } from "~/lib/supabase";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User, Session, SupabaseClient } from "@supabase/supabase-js";
 import type { Profile } from "~/lib/types";
 
 interface AuthContextType {
@@ -21,10 +20,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
-    const supabase = createClient();
+    // Initialize Supabase client only on client-side
+    useEffect(() => {
+        // Only run on client
+        if (typeof window === "undefined") {
+            setLoading(false);
+            return;
+        }
+
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        // Check if env vars are available
+        if (!url || !key || url === "your-project-url") {
+            console.warn("Supabase not configured. Auth disabled.");
+            setLoading(false);
+            return;
+        }
+
+        // Dynamically import to avoid SSR issues
+        import("~/lib/supabase").then(({ createClient }) => {
+            const client = createClient();
+            setSupabase(client);
+        });
+    }, []);
 
     const fetchProfile = async (userId: string) => {
+        if (!supabase) return;
+
         const { data, error } = await supabase
             .from("profiles")
             .select("*")
@@ -43,6 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        if (!supabase) return;
+
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
@@ -68,9 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [supabase]);
 
     const signIn = async (email: string, password: string) => {
+        if (!supabase) return { error: "Auth not configured" };
+
         const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -80,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const signUp = async (email: string, password: string) => {
+        if (!supabase) return { error: "Auth not configured" };
+
         const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -89,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const signOut = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         setUser(null);
         setProfile(null);

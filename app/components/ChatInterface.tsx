@@ -1,7 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 
 export function ChatInterface() {
@@ -20,7 +20,7 @@ export function ChatInterface() {
         },
     });
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append } = chatHelpers;
+    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append, stop } = chatHelpers;
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -196,14 +196,25 @@ export function ChatInterface() {
                         placeholder="Describe your app..."
                         className="flex-1 bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
                     />
-                    <button
-                        type="submit"
-                        disabled={isLoading || !input.trim()}
-                        className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-                    >
-                        <Send className="w-4 h-4" />
-                        <span>Send</span>
-                    </button>
+                    {isLoading ? (
+                        <button
+                            type="button"
+                            onClick={() => stop()}
+                            className="px-4 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                        >
+                            <Square className="w-4 h-4" />
+                            <span>Stop</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="submit"
+                            disabled={!input.trim()}
+                            className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                        >
+                            <Send className="w-4 h-4" />
+                            <span>Send</span>
+                        </button>
+                    )}
                 </div>
             </form>
         </div>

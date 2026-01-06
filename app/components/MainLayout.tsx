@@ -6,9 +6,13 @@ import { CodeEditor } from "./CodeEditor";
 import { Terminal } from "./Terminal";
 import { Preview } from "./Preview";
 import { Sidebar } from "./Sidebar";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { useAuth } from "~/context/AuthContext";
+import { useNavigate } from "react-router";
 
 export function MainLayout() {
+    const { user, loading } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<"preview" | "code" | "terminal">("preview");
     const [showPreview, setShowPreview] = useState(true);
     const [showCodePanel, setShowCodePanel] = useState(false);
@@ -17,6 +21,27 @@ export function MainLayout() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Redirect to landing if not authenticated
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate("/landing");
+        }
+    }, [user, loading, navigate]);
+
+    // Show loading while checking auth
+    if (loading) {
+        return (
+            <div className="h-screen w-screen bg-[#0a0a0f] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        );
+    }
+
+    // Don't render main layout if not logged in
+    if (!user) {
+        return null;
+    }
 
     return (
         <div className="h-screen w-screen bg-[#0a0a0f] text-white flex flex-col overflow-hidden">
