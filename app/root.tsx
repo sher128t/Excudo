@@ -49,12 +49,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 import { WebContainerProvider } from "./context/WebContainerContext";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function App() {
   return (
-    <WebContainerProvider>
-      <Outlet />
-    </WebContainerProvider>
+    <AuthProvider>
+      <WebContainerProvider>
+        <Outlet />
+      </WebContainerProvider>
+    </AuthProvider>
   );
 }
 

@@ -4,6 +4,8 @@ import {
     BarChart3, Cloud, Palette, Shield, Zap, Share2,
     Maximize2, Minimize2, Eye, EyeOff
 } from "lucide-react";
+import { CreditsDisplay } from "./CreditsDisplay";
+import { UserMenu } from "./UserMenu";
 
 interface HeaderProps {
     activeTab: "preview" | "code" | "terminal";
@@ -82,8 +84,8 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                     <button
                         onClick={onTogglePreview}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${showPreview
-                                ? "bg-indigo-500/20 text-indigo-400"
-                                : "text-gray-400 hover:text-white"
+                            ? "bg-indigo-500/20 text-indigo-400"
+                            : "text-gray-400 hover:text-white"
                             }`}
                     >
                         <Eye className="w-4 h-4" />
@@ -131,14 +133,13 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
             </div>
 
             {/* Right - Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+                <CreditsDisplay />
                 <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors">
                     <Share2 className="w-4 h-4" />
                     <span>Share</span>
                 </button>
-                <button className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg text-sm font-medium transition-all">
-                    Publish
-                </button>
+                <UserMenu />
             </div>
         </header>
     );
