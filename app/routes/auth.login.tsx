@@ -8,15 +8,15 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const { signIn, user, loading: authLoading } = useAuth();
+    const { signIn, user } = useAuth();
     const navigate = useNavigate();
 
     // If already logged in, redirect to main app
     useEffect(() => {
-        if (!authLoading && user) {
+        if (user) {
             navigate("/");
         }
-    }, [user, authLoading, navigate]);
+    }, [user, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +30,7 @@ export default function Login() {
                 setError(result.error);
                 setLoading(false);
             } else {
-                // Small delay to let auth state update
+                // Success - wait for auth state to update and redirect
                 setTimeout(() => {
                     navigate("/");
                 }, 500);
@@ -40,15 +40,6 @@ export default function Login() {
             setLoading(false);
         }
     };
-
-    // Show loading while checking if user is already logged in
-    if (authLoading) {
-        return (
-            <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">

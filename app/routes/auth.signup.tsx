@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { Hammer, Mail, Lock, ArrowRight, Loader2, Check } from "lucide-react";
@@ -9,7 +9,15 @@ export default function Signup() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { signUp } = useAuth();
+    const { signUp, user } = useAuth();
+    const navigate = useNavigate();
+
+    // If already logged in, redirect
+    useEffect(() => {
+        if (user) {
+            navigate("/");
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,13 +30,18 @@ export default function Signup() {
             return;
         }
 
-        const result = await signUp(email, password);
+        try {
+            const result = await signUp(email, password);
 
-        if (result.error) {
-            setError(result.error);
+            if (result.error) {
+                setError(result.error);
+                setLoading(false);
+            } else {
+                setSuccess(true);
+            }
+        } catch (err) {
+            setError("Something went wrong. Please try again.");
             setLoading(false);
-        } else {
-            setSuccess(true);
         }
     };
 
