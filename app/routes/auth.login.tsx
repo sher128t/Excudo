@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { Hammer, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -8,23 +8,47 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signIn, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+
+    // If already logged in, redirect to main app
+    useEffect(() => {
+        if (!authLoading && user) {
+            navigate("/");
+        }
+    }, [user, authLoading, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
 
-        const result = await signIn(email, password);
+        try {
+            const result = await signIn(email, password);
 
-        if (result.error) {
-            setError(result.error);
+            if (result.error) {
+                setError(result.error);
+                setLoading(false);
+            } else {
+                // Small delay to let auth state update
+                setTimeout(() => {
+                    navigate("/");
+                }, 500);
+            }
+        } catch (err) {
+            setError("Something went wrong. Please try again.");
             setLoading(false);
-        } else {
-            navigate("/");
         }
     };
+
+    // Show loading while checking if user is already logged in
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">

@@ -21,12 +21,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+    const [initialized, setInitialized] = useState(false);
 
     // Initialize Supabase client only on client-side
     useEffect(() => {
         // Only run on client
         if (typeof window === "undefined") {
             setLoading(false);
+            setInitialized(true);
             return;
         }
 
@@ -37,27 +39,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!url || !key || url === "your-project-url") {
             console.warn("Supabase not configured. Auth disabled.");
             setLoading(false);
+            setInitialized(true);
             return;
         }
 
         // Dynamically import to avoid SSR issues
         import("~/lib/supabase").then(({ createClient }) => {
-            const client = createClient();
-            setSupabase(client);
+            try {
+                const client = createClient();
+                setSupabase(client);
+            } catch (err) {
+                console.error("Failed to init Supabase:", err);
+                setLoading(false);
+                setInitialized(true);
+            }
+        }).catch(err => {
+            console.error("Failed to load Supabase:", err);
+            setLoading(false);
+            setInitialized(true);
         });
     }, []);
 
     const fetchProfile = async (userId: string) => {
         if (!supabase) return;
 
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", userId)
+                .single();
 
-        if (!error && data) {
-            setProfile(data as Profile);
+            if (!error && data) {
+                setProfile(data as Profile);
+            }
+        } catch (err) {
+            console.error("Error fetching profile:", err);
         }
     };
 
@@ -67,22 +84,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Initialize auth session when Supabase client is ready
     useEffect(() => {
         if (!supabase) return;
 
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchProfile(session.user.id);
+        let isMounted = true;
+
+        const initAuth = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (!isMounted) return;
+
+                if (error) {
+                    console.error("Error getting session:", error);
+                } else if (session) {
+                    setSession(session);
+                    setUser(session.user);
+                    await fetchProfile(session.user.id);
+                }
+            } catch (err) {
+                console.error("Auth init error:", err);
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                    setInitialized(true);
+                }
             }
-            setLoading(false);
-        });
+        };
+
+        initAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
+                if (!isMounted) return;
+
                 setSession(session);
                 setUser(session?.user ?? null);
 
@@ -94,39 +131,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         );
 
-        return () => subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+        };
     }, [supabase]);
 
     const signIn = async (email: string, password: string) => {
-        if (!supabase) return { error: "Auth not configured" };
+        if (!supabase) return { error: "Auth not configured. Please check env vars." };
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error) return { error: error.message };
-        return {};
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+            if (error) return { error: error.message };
+            return {};
+        } catch (err) {
+            return { error: "Sign in failed" };
+        }
     };
 
     const signUp = async (email: string, password: string) => {
-        if (!supabase) return { error: "Auth not configured" };
+        if (!supabase) return { error: "Auth not configured. Please check env vars." };
 
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-        });
-        if (error) return { error: error.message };
-        return {};
+        try {
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+            });
+            if (error) return { error: error.message };
+            return {};
+        } catch (err) {
+            return { error: "Sign up failed" };
+        }
     };
 
     const signOut = async () => {
         if (!supabase) return;
-        await supabase.auth.signOut();
+        try {
+            await supabase.auth.signOut();
+        } catch (err) {
+            console.error("Sign out error:", err);
+        }
         setUser(null);
         setProfile(null);
         setSession(null);
     };
 
+    // Always render children - don't block on loading
     return (
         <AuthContext.Provider value={{
             user,
