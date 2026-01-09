@@ -32,8 +32,13 @@ function getSupabaseClient(): SupabaseClient | null {
         return null;
     }
 
-    supabaseClient = createBrowserClient(url, key);
-    return supabaseClient;
+    try {
+        supabaseClient = createBrowserClient(url, key);
+        return supabaseClient;
+    } catch (err) {
+        console.error("Failed to create Supabase client:", err);
+        return null;
+    }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -41,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [initialized, setInitialized] = useState(false);
 
     const supabase = getSupabaseClient();
 
@@ -68,38 +74,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [user, fetchProfile]);
 
-    // Initialize auth on mount
+    // Initialize auth on mount with timeout protection
     useEffect(() => {
+        if (initialized) return;
+
+        // If no supabase, finish loading immediately
         if (!supabase) {
             setLoading(false);
+            setInitialized(true);
             return;
         }
 
         let mounted = true;
 
+        // Timeout to prevent infinite loading - set loading false after 5 seconds max
+        const timeout = setTimeout(() => {
+            if (mounted && loading) {
+                console.warn("Auth initialization timeout - forcing completion");
+                setLoading(false);
+                setInitialized(true);
+            }
+        }, 5000);
+
         // Get initial session
         const initSession = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
                 if (!mounted) return;
 
                 if (error) {
                     console.error("Session error:", error);
-                    setLoading(false);
-                    return;
+                } else if (currentSession) {
+                    setSession(currentSession);
+                    setUser(currentSession.user);
+                    // Fetch profile in background, don't wait
+                    fetchProfile(currentSession.user.id);
                 }
-
-                if (session) {
-                    setSession(session);
-                    setUser(session.user);
-                    await fetchProfile(session.user.id);
-                }
-
-                setLoading(false);
             } catch (err) {
                 console.error("Init session error:", err);
-                if (mounted) setLoading(false);
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                    setInitialized(true);
+                    clearTimeout(timeout);
+                }
             }
         };
 
@@ -110,22 +129,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             async (event, newSession) => {
                 if (!mounted) return;
 
+                console.log("Auth state change:", event);
+
                 setSession(newSession);
                 setUser(newSession?.user ?? null);
 
                 if (newSession?.user) {
-                    await fetchProfile(newSession.user.id);
+                    fetchProfile(newSession.user.id);
                 } else {
                     setProfile(null);
                 }
+
+                // Ensure loading is false after any auth change
+                setLoading(false);
             }
         );
 
         return () => {
             mounted = false;
+            clearTimeout(timeout);
             subscription.unsubscribe();
         };
-    }, [supabase, fetchProfile]);
+    }, [supabase, fetchProfile, initialized, loading]);
 
     const signIn = async (email: string, password: string) => {
         if (!supabase) return { error: "Auth not configured" };
