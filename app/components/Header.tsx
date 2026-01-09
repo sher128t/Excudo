@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router";
 import {
     Hammer, Settings, ChevronDown, Code, Terminal as TerminalIcon,
     BarChart3, Cloud, Palette, Shield, Zap, Share2,
-    Maximize2, Minimize2, Eye, EyeOff
+    Maximize2, Minimize2, Eye, EyeOff, Home
 } from "lucide-react";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { UserMenu } from "./UserMenu";
@@ -68,16 +69,25 @@ function Dropdown({ label, icon, items }: DropdownProps) {
 export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }: HeaderProps) {
     return (
         <header className="h-12 bg-[#0a0a0f] border-b border-[#1e1e2e] flex items-center justify-between px-4">
-            {/* Logo */}
+            {/* Logo and Home */}
             <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
+                <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                         <Hammer className="w-5 h-5 text-white" />
                     </div>
                     <span className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                         Forge
                     </span>
-                </div>
+                </Link>
+
+                {/* Back to Dashboard */}
+                <Link
+                    to="/"
+                    className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                >
+                    <Home className="w-4 h-4" />
+                    <span>Dashboard</span>
+                </Link>
 
                 {/* Primary Toggle */}
                 <div className="flex items-center bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">

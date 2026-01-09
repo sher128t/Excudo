@@ -1,13 +1,17 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon } from "lucide-react";
 import { ActionChips } from "./ActionChips";
+import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
     const processedToolCalls = useRef<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const initialPromptHandled = useRef(false);
+    const [showAttachModal, setShowAttachModal] = useState(false);
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
     const chatHelpers = useChat({
         api: "/api/chat",
@@ -66,6 +70,21 @@ export function ChatInterface() {
         setMessages([]);
         processedToolCalls.current.clear();
     };
+
+    // Handle initial prompt from dashboard
+    useEffect(() => {
+        if (initialPromptHandled.current) return;
+
+        const initialPrompt = sessionStorage.getItem("initialPrompt");
+        if (initialPrompt) {
+            initialPromptHandled.current = true;
+            sessionStorage.removeItem("initialPrompt");
+            // Small delay to ensure everything is mounted
+            setTimeout(() => {
+                append({ role: "user", content: initialPrompt });
+            }, 500);
+        }
+    }, [append]);
 
     const getToolIcon = (toolName: string) => {
         switch (toolName) {
@@ -188,7 +207,36 @@ export function ChatInterface() {
 
             {/* Input */}
             <form onSubmit={handleSubmit} className="p-4 border-t border-[#1e1e2e]">
-                <div className="flex gap-2">
+                {/* Attached files preview */}
+                {attachedFiles.length > 0 && (
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                        {attachedFiles.map((file) => (
+                            <div key={file.id} className="relative group">
+                                <img
+                                    src={file.dataUrl}
+                                    alt={file.name}
+                                    className="w-16 h-16 object-cover rounded-lg border border-[#1e1e2e]"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setAttachedFiles(prev => prev.filter(f => f.id !== file.id))}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="flex gap-2 items-center">
+                    <button
+                        type="button"
+                        onClick={() => setShowAttachModal(true)}
+                        className={`p-3 rounded-xl transition-colors ${attachedFiles.length > 0 ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        title="Attach images"
+                    >
+                        <Paperclip className="w-5 h-5" />
+                    </button>
                     <input
                         type="text"
                         value={input}
@@ -208,7 +256,7 @@ export function ChatInterface() {
                     ) : (
                         <button
                             type="submit"
-                            disabled={!input.trim()}
+                            disabled={!input.trim() && attachedFiles.length === 0}
                             className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-all flex items-center gap-2"
                         >
                             <Send className="w-4 h-4" />
@@ -217,6 +265,13 @@ export function ChatInterface() {
                     )}
                 </div>
             </form>
+
+            {/* File Attach Modal */}
+            <FileAttachModal
+                isOpen={showAttachModal}
+                onClose={() => setShowAttachModal(false)}
+                onAttach={(files) => setAttachedFiles(prev => [...prev, ...files])}
+            />
         </div>
     );
 }

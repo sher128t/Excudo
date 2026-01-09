@@ -50,13 +50,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 import { WebContainerProvider } from "./context/WebContainerContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ProjectProvider } from "./context/ProjectContext";
 
 export default function App() {
   return (
     <AuthProvider>
-      <WebContainerProvider>
-        <Outlet />
-      </WebContainerProvider>
+      <ProjectProvider>
+        <WebContainerProvider>
+          <Outlet />
+        </WebContainerProvider>
+      </ProjectProvider>
     </AuthProvider>
   );
 }
