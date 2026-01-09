@@ -8,39 +8,52 @@ import { Preview } from "~/components/Preview";
 import { Sidebar } from "~/components/Sidebar";
 import { X, Loader2 } from "lucide-react";
 import { useAuth } from "~/context/AuthContext";
+import { useProject } from "~/context/ProjectContext";
 import { useNavigate } from "react-router";
 
 export default function Editor() {
-    const { user, loading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const { currentProject, openProject, loading: projectLoading } = useProject();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<"preview" | "code" | "terminal">("preview");
     const [showPreview, setShowPreview] = useState(true);
     const [showCodePanel, setShowCodePanel] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [projectInitialized, setProjectInitialized] = useState(false);
 
+    // Mount and load project from sessionStorage
     useEffect(() => {
         setIsMounted(true);
 
-        // Check for initial prompt from dashboard
-        const initialPrompt = sessionStorage.getItem("initialPrompt");
-        if (initialPrompt) {
-            sessionStorage.removeItem("initialPrompt");
-            // TODO: Auto-submit the prompt
+        // Load project if we have an ID in sessionStorage
+        const projectId = sessionStorage.getItem("currentProjectId");
+        if (projectId && !projectInitialized) {
+            setProjectInitialized(true);
+            openProject(projectId).then(() => {
+                console.log("Project loaded:", projectId);
+            });
         }
-    }, []);
+    }, [openProject, projectInitialized]);
 
     // Redirect to landing if not authenticated
     useEffect(() => {
-        if (!loading && !user) {
+        if (!authLoading && !user) {
             navigate("/landing");
         }
-    }, [user, loading, navigate]);
+    }, [user, authLoading, navigate]);
 
-    // Show loading while checking auth
-    if (loading) {
+    // Show loading while checking auth or loading project
+    const isLoading = authLoading || (projectLoading && !currentProject);
+
+    if (isLoading) {
         return (
             <div className="h-screen w-screen bg-[#0a0a0f] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm">
+                        {authLoading ? "Checking authentication..." : "Loading project..."}
+                    </p>
+                </div>
             </div>
         );
     }
