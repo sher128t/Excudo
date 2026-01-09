@@ -24,6 +24,7 @@ create table projects (
   name text not null,
   description text,
   files jsonb default '{}',
+  chat_messages jsonb default '[]',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

@@ -1,15 +1,19 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
+import { useProject } from "~/context/ProjectContext";
 import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand } = useWebContainer();
+    const { currentProject, saveProject } = useProject();
     const processedToolCalls = useRef<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialPromptHandled = useRef(false);
+    const projectLoadedRef = useRef<string | null>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
@@ -70,6 +74,42 @@ export function ChatInterface() {
         setMessages([]);
         processedToolCalls.current.clear();
     };
+
+    // Load chat messages when project changes
+    useEffect(() => {
+        if (currentProject && projectLoadedRef.current !== currentProject.id) {
+            projectLoadedRef.current = currentProject.id;
+            if (currentProject.chat_messages && currentProject.chat_messages.length > 0) {
+                setMessages(currentProject.chat_messages);
+            }
+        }
+    }, [currentProject, setMessages]);
+
+    // Auto-save chat messages when they change (debounced)
+    useEffect(() => {
+        if (!currentProject || messages.length === 0) return;
+        // Don't save if we just loaded from project
+        if (projectLoadedRef.current === currentProject.id &&
+            currentProject.chat_messages?.length === messages.length) {
+            return;
+        }
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Debounce save to avoid too many requests
+        saveTimeoutRef.current = setTimeout(() => {
+            saveProject({ chat_messages: messages });
+        }, 2000);  // Save 2 seconds after last change
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [messages, currentProject, saveProject]);
 
     // Handle initial prompt from dashboard
     useEffect(() => {

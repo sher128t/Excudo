@@ -15,6 +15,7 @@ export interface Project {
     name: string;
     description?: string;
     files: Record<string, string>;
+    chat_messages?: any[];  // Store chat history
     created_at: string;
     updated_at: string;
 }

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import type { User, Session, SupabaseClient } from "@supabase/supabase-js";
 import type { Profile } from "~/lib/types";
 
@@ -15,52 +16,35 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Create supabase client once at module level (only on client)
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient | null {
+    if (typeof window === "undefined") return null;
+
+    if (supabaseClient) return supabaseClient;
+
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !key || url === "your-project-url") {
+        console.warn("Supabase not configured");
+        return null;
+    }
+
+    supabaseClient = createBrowserClient(url, key);
+    return supabaseClient;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
-    const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
-    const [initialized, setInitialized] = useState(false);
 
-    // Initialize Supabase client only on client-side
-    useEffect(() => {
-        // Only run on client
-        if (typeof window === "undefined") {
-            setLoading(false);
-            setInitialized(true);
-            return;
-        }
+    const supabase = getSupabaseClient();
 
-        const url = import.meta.env.VITE_SUPABASE_URL;
-        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        // Check if env vars are available
-        if (!url || !key || url === "your-project-url") {
-            console.warn("Supabase not configured. Auth disabled.");
-            setLoading(false);
-            setInitialized(true);
-            return;
-        }
-
-        // Dynamically import to avoid SSR issues
-        import("~/lib/supabase").then(({ createClient }) => {
-            try {
-                const client = createClient();
-                setSupabase(client);
-            } catch (err) {
-                console.error("Failed to init Supabase:", err);
-                setLoading(false);
-                setInitialized(true);
-            }
-        }).catch(err => {
-            console.error("Failed to load Supabase:", err);
-            setLoading(false);
-            setInitialized(true);
-        });
-    }, []);
-
-    const fetchProfile = async (userId: string) => {
+    const fetchProfile = useCallback(async (userId: string) => {
         if (!supabase) return;
 
         try {
@@ -76,55 +60,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (err) {
             console.error("Error fetching profile:", err);
         }
-    };
+    }, [supabase]);
 
-    const refreshProfile = async () => {
+    const refreshProfile = useCallback(async () => {
         if (user) {
             await fetchProfile(user.id);
         }
-    };
+    }, [user, fetchProfile]);
 
-    // Initialize auth session when Supabase client is ready
+    // Initialize auth on mount
     useEffect(() => {
-        if (!supabase) return;
+        if (!supabase) {
+            setLoading(false);
+            return;
+        }
 
-        let isMounted = true;
+        let mounted = true;
 
-        const initAuth = async () => {
+        // Get initial session
+        const initSession = async () => {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession();
 
-                if (!isMounted) return;
+                if (!mounted) return;
 
                 if (error) {
-                    console.error("Error getting session:", error);
-                } else if (session) {
+                    console.error("Session error:", error);
+                    setLoading(false);
+                    return;
+                }
+
+                if (session) {
                     setSession(session);
                     setUser(session.user);
                     await fetchProfile(session.user.id);
                 }
+
+                setLoading(false);
             } catch (err) {
-                console.error("Auth init error:", err);
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                    setInitialized(true);
-                }
+                console.error("Init session error:", err);
+                if (mounted) setLoading(false);
             }
         };
 
-        initAuth();
+        initSession();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (!isMounted) return;
+            async (event, newSession) => {
+                if (!mounted) return;
 
-                setSession(session);
-                setUser(session?.user ?? null);
+                setSession(newSession);
+                setUser(newSession?.user ?? null);
 
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
+                if (newSession?.user) {
+                    await fetchProfile(newSession.user.id);
                 } else {
                     setProfile(null);
                 }
@@ -132,19 +122,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
 
         return () => {
-            isMounted = false;
+            mounted = false;
             subscription.unsubscribe();
         };
-    }, [supabase]);
+    }, [supabase, fetchProfile]);
 
     const signIn = async (email: string, password: string) => {
-        if (!supabase) return { error: "Auth not configured. Please check env vars." };
+        if (!supabase) return { error: "Auth not configured" };
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) return { error: error.message };
             return {};
         } catch (err) {
@@ -153,13 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const signUp = async (email: string, password: string) => {
-        if (!supabase) return { error: "Auth not configured. Please check env vars." };
+        if (!supabase) return { error: "Auth not configured" };
 
         try {
-            const { error } = await supabase.auth.signUp({
-                email,
-                password,
-            });
+            const { error } = await supabase.auth.signUp({ email, password });
             if (error) return { error: error.message };
             return {};
         } catch (err) {
@@ -179,7 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
     };
 
-    // Always render children - don't block on loading
     return (
         <AuthContext.Provider value={{
             user,

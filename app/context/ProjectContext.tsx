@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { createProject, getProjects, saveProjectFiles, deleteProject, renameProject, getProject } from "~/lib/projects";
+import { createProject, getProjects, saveProjectData, deleteProject, renameProject, getProject } from "~/lib/projects";
 import type { Project } from "~/lib/types";
 
 interface ProjectContextType {
@@ -14,10 +14,10 @@ interface ProjectContextType {
 
     // Project operations
     createNewProject: (name: string) => Promise<Project | null>;
-    saveCurrentProject: (files: Record<string, string>) => Promise<boolean>;
+    saveProject: (data: { files?: Record<string, string>; chat_messages?: any[] }) => Promise<boolean>;
     deleteProjectById: (id: string) => Promise<boolean>;
     renameProjectById: (id: string, name: string) => Promise<boolean>;
-    openProject: (id: string) => Promise<void>;
+    openProject: (id: string) => Promise<Project | null>;
 
     // State
     loading: boolean;
@@ -67,19 +67,28 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         }
     }, [user]);
 
-    // Save current project files
-    const saveCurrentProject = useCallback(async (files: Record<string, string>): Promise<boolean> => {
+    // Save current project (files and/or chat)
+    const saveProject = useCallback(async (data: { files?: Record<string, string>; chat_messages?: any[] }): Promise<boolean> => {
         if (!currentProject) return false;
 
         setSaving(true);
         try {
-            const success = await saveProjectFiles(currentProject.id, files);
+            const success = await saveProjectData(currentProject.id, data);
             if (success) {
                 setLastSaved(new Date());
                 // Update local state
-                setCurrentProject(prev => prev ? { ...prev, files } : null);
+                setCurrentProject(prev => prev ? {
+                    ...prev,
+                    ...(data.files !== undefined ? { files: data.files } : {}),
+                    ...(data.chat_messages !== undefined ? { chat_messages: data.chat_messages } : {}),
+                } : null);
                 setProjects(prev =>
-                    prev.map(p => p.id === currentProject.id ? { ...p, files, updated_at: new Date().toISOString() } : p)
+                    prev.map(p => p.id === currentProject.id ? {
+                        ...p,
+                        ...(data.files !== undefined ? { files: data.files } : {}),
+                        ...(data.chat_messages !== undefined ? { chat_messages: data.chat_messages } : {}),
+                        updated_at: new Date().toISOString()
+                    } : p)
                 );
             }
             return success;
@@ -125,16 +134,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         }
     }, [currentProject]);
 
-    // Open project by ID
-    const openProject = useCallback(async (id: string): Promise<void> => {
+    // Open project by ID - returns the project so editor can load it
+    const openProject = useCallback(async (id: string): Promise<Project | null> => {
         setLoading(true);
         try {
             const project = await getProject(id);
             if (project) {
                 setCurrentProject(project);
             }
+            return project;
         } catch (err) {
             console.error("Failed to open project:", err);
+            return null;
         } finally {
             setLoading(false);
         }
@@ -157,7 +168,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             projects,
             loadProjects,
             createNewProject,
-            saveCurrentProject,
+            saveProject,
             deleteProjectById,
             renameProjectById,
             openProject,

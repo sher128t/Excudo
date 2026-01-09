@@ -1,9 +1,21 @@
-import { createClient } from "~/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Project } from "~/lib/types";
+
+// Get client-side Supabase client
+function getClient() {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+        throw new Error("Supabase not configured");
+    }
+
+    return createBrowserClient(url, key);
+}
 
 // Create a new project
 export async function createProject(userId: string, name: string): Promise<Project | null> {
-    const supabase = createClient();
+    const supabase = getClient();
 
     const { data, error } = await supabase
         .from("projects")
@@ -25,7 +37,7 @@ export async function createProject(userId: string, name: string): Promise<Proje
 
 // Get all projects for a user
 export async function getProjects(userId: string): Promise<Project[]> {
-    const supabase = createClient();
+    const supabase = getClient();
 
     const { data, error } = await supabase
         .from("projects")
@@ -43,7 +55,7 @@ export async function getProjects(userId: string): Promise<Project[]> {
 
 // Get a single project
 export async function getProject(projectId: string): Promise<Project | null> {
-    const supabase = createClient();
+    const supabase = getClient();
 
     const { data, error } = await supabase
         .from("projects")
@@ -59,16 +71,27 @@ export async function getProject(projectId: string): Promise<Project | null> {
     return data as Project;
 }
 
-// Update project files
-export async function saveProjectFiles(projectId: string, files: Record<string, string>): Promise<boolean> {
-    const supabase = createClient();
+// Update project (files and/or chat messages)
+export async function saveProjectData(
+    projectId: string,
+    data: { files?: Record<string, string>; chat_messages?: any[] }
+): Promise<boolean> {
+    const supabase = getClient();
+
+    const updateData: any = {
+        updated_at: new Date().toISOString(),
+    };
+
+    if (data.files !== undefined) {
+        updateData.files = data.files;
+    }
+    if (data.chat_messages !== undefined) {
+        updateData.chat_messages = data.chat_messages;
+    }
 
     const { error } = await supabase
         .from("projects")
-        .update({
-            files,
-            updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", projectId);
 
     if (error) {
@@ -79,9 +102,14 @@ export async function saveProjectFiles(projectId: string, files: Record<string, 
     return true;
 }
 
+// Backward compat - save just files
+export async function saveProjectFiles(projectId: string, files: Record<string, string>): Promise<boolean> {
+    return saveProjectData(projectId, { files });
+}
+
 // Delete a project
 export async function deleteProject(projectId: string): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = getClient();
 
     const { error } = await supabase
         .from("projects")
@@ -98,7 +126,7 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 
 // Rename a project
 export async function renameProject(projectId: string, name: string): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = getClient();
 
     const { error } = await supabase
         .from("projects")
