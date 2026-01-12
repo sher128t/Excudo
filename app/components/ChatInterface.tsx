@@ -28,7 +28,7 @@ export function ChatInterface() {
         },
     });
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append, stop } = chatHelpers;
+    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append, stop, addToolResult } = chatHelpers;
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -45,30 +45,45 @@ export function ChatInterface() {
                     if (toolInvocation.state !== 'call') continue;
 
                     processedToolCalls.current.add(toolInvocation.toolCallId);
-                    const { toolName, args } = toolInvocation;
+                    const { toolName, args, toolCallId } = toolInvocation;
 
                     try {
                         console.log(`Executing tool: ${toolName}`, args);
+                        let result = "Success";
 
                         if (toolName === "createFile" || toolName === "updateFile") {
                             await writeFile(args.path, args.content);
-                            console.log(`File ${args.path} created/updated.`);
+                            result = `File ${args.path} created/updated successfully`;
+                            console.log(result);
                         } else if (toolName === "deleteFile") {
-                            console.log(`File ${args.path} deleted (simulated).`);
+                            result = `File ${args.path} deleted`;
+                            console.log(result);
                         } else if (toolName === "runCommand") {
                             const [cmd, ...cmdArgs] = args.command.split(" ");
                             await runCommand(cmd, cmdArgs);
-                            console.log(`Command ${args.command} executed.`);
+                            result = `Command ${args.command} executed successfully`;
+                            console.log(result);
                         }
+
+                        // Send result back to AI so it can continue
+                        addToolResult({
+                            toolCallId,
+                            result,
+                        });
                     } catch (error) {
                         console.error(`Error executing ${toolName}:`, error);
+                        // Send error result so AI knows something went wrong
+                        addToolResult({
+                            toolCallId,
+                            result: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                        });
                     }
                 }
             }
         };
 
         processToolCalls();
-    }, [messages, writeFile, runCommand]);
+    }, [messages, writeFile, runCommand, addToolResult]);
 
     const clearChat = () => {
         setMessages([]);
