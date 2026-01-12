@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
+import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
     Hammer, Home, Search, FolderOpen, Clock, Star, Users, Compass,
     BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2, MoreHorizontal,
-    Trash2, Pencil, ExternalLink
+    Trash2, Pencil, ExternalLink, AlertCircle
 } from "lucide-react";
 import { CreditsDisplay } from "~/components/CreditsDisplay";
 import { UserMenu } from "~/components/UserMenu";
@@ -17,6 +18,11 @@ export default function Dashboard() {
     const [prompt, setPrompt] = useState("");
     const [activeTab, setActiveTab] = useState<"recent" | "projects" | "templates">("recent");
     const [creatingProject, setCreatingProject] = useState(false);
+    const [limitError, setLimitError] = useState("");
+
+    // Check if user can create more projects
+    const canCreate = profile ? canCreateProject(profile, projects.length) : true;
+    const projectLimit = profile ? getProjectLimit(profile) : 3;
 
     // Redirect to landing if not authenticated
     useEffect(() => {
@@ -28,6 +34,13 @@ export default function Dashboard() {
     const handleStartProject = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!prompt.trim() || !user) return;
+
+        // Check project limit
+        if (!canCreate) {
+            setLimitError(`You've reached your limit of ${projectLimit} projects. Upgrade to create more!`);
+            return;
+        }
+        setLimitError("");
 
         setCreatingProject(true);
         try {
@@ -141,19 +154,19 @@ export default function Dashboard() {
 
                         {/* Prompt Input */}
                         <form onSubmit={handleStartProject} className="relative">
-                            <div className="bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-2 flex items-center gap-2">
+                            <div className={`bg-[#12121a] border rounded-2xl p-2 flex items-center gap-2 ${limitError ? 'border-red-500/50' : 'border-[#1e1e2e]'}`}>
                                 <input
                                     type="text"
                                     value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
+                                    onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
                                     placeholder="Ask Forge to create a dashboard for..."
                                     className="flex-1 bg-transparent px-4 py-3 text-white placeholder-gray-500 focus:outline-none"
-                                    disabled={creatingProject}
+                                    disabled={creatingProject || !canCreate}
                                 />
                                 <div className="flex items-center gap-2 pr-2">
                                     <button
                                         type="submit"
-                                        disabled={!prompt.trim() || creatingProject}
+                                        disabled={!prompt.trim() || creatingProject || !canCreate}
                                         className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg disabled:opacity-50"
                                     >
                                         {creatingProject ? (
@@ -164,7 +177,24 @@ export default function Dashboard() {
                                     </button>
                                 </div>
                             </div>
+                            {/* Project count and limit */}
+                            <div className="flex items-center justify-between mt-2 px-2">
+                                <span className="text-xs text-gray-500">
+                                    {projects.length}/{projectLimit} projects used
+                                </span>
+                                {!canCreate && (
+                                    <span className="text-xs text-yellow-500">Upgrade for more</span>
+                                )}
+                            </div>
                         </form>
+
+                        {/* Limit Error */}
+                        {limitError && (
+                            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                <p className="text-sm text-red-400">{limitError}</p>
+                            </div>
+                        )}
 
                         {/* Quick Actions */}
                         <div className="flex items-center justify-center gap-3 mt-6">
@@ -242,8 +272,8 @@ export default function Dashboard() {
 function SidebarItem({ icon: Icon, label, active, badge }: { icon: any; label: string; active?: boolean; badge?: number }) {
     return (
         <button className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${active
-                ? "bg-white/10 text-white"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+            ? "bg-white/10 text-white"
+            : "text-gray-400 hover:text-white hover:bg-white/5"
             }`}>
             <div className="flex items-center gap-3">
                 <Icon className="w-4 h-4" />

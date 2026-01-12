@@ -25,6 +25,7 @@ create table projects (
   description text,
   files jsonb default '{}',
   chat_messages jsonb default '[]',
+  thumbnail text,  -- Base64 screenshot of preview
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

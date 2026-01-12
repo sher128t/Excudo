@@ -16,6 +16,7 @@ export interface Project {
     description?: string;
     files: Record<string, string>;
     chat_messages?: any[];  // Store chat history
+    thumbnail?: string;  // Base64 screenshot of preview
     created_at: string;
     updated_at: string;
 }
@@ -35,6 +36,14 @@ export const CREDIT_LIMITS: Record<Profile["tier"], number> = {
     admin: 999999, // Unlimited for admin
 };
 
+// Project limits per tier
+export const PROJECT_LIMITS: Record<Profile["tier"], number> = {
+    free: 3,
+    pro: 25,
+    enterprise: 100,
+    admin: 999999, // Unlimited for admin
+};
+
 // Helper to check if user has credits
 export function hasCredits(profile: Profile): boolean {
     if (profile.tier === "admin") return true; // Admin always has credits
@@ -46,3 +55,15 @@ export function getRemainingCredits(profile: Profile): number {
     if (profile.tier === "admin") return Infinity;
     return Math.max(0, profile.credits_limit - profile.credits_used_today);
 }
+
+// Helper to check if user can create more projects
+export function canCreateProject(profile: Profile, currentProjectCount: number): boolean {
+    if (profile.tier === "admin") return true;
+    return currentProjectCount < PROJECT_LIMITS[profile.tier];
+}
+
+// Helper to get project limit
+export function getProjectLimit(profile: Profile): number {
+    return PROJECT_LIMITS[profile.tier];
+}
+

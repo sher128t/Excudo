@@ -4,19 +4,26 @@ import {
     useEffect,
     useState,
     useRef,
+    useCallback,
     type ReactNode,
 } from "react";
 import { WebContainer } from "@webcontainer/api";
+
+export type ServerStatus = "idle" | "writing-files" | "installing" | "starting" | "ready" | "error";
 
 interface WebContainerContextType {
     webcontainer: WebContainer | null;
     isLoading: boolean;
     error: Error | null;
     serverUrl: string | null;
+    serverStatus: ServerStatus;
+    serverStatusMessage: string;
     writeFile: (path: string, content: string) => Promise<void>;
     readFile: (path: string) => Promise<string>;
-    runCommand: (cmd: string, args: string[]) => Promise<void>;
+    runCommand: (cmd: string, args: string[]) => Promise<number>;
     registerTerminal: (writer: (data: string) => void) => void;
+    loadProjectFiles: (files: Record<string, string>) => Promise<void>;
+    startDevServer: () => Promise<void>;
 }
 
 const WebContainerContext = createContext<WebContainerContextType | null>(null);
@@ -26,6 +33,8 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const [serverUrl, setServerUrl] = useState<string | null>(null);
+    const [serverStatus, setServerStatus] = useState<ServerStatus>("idle");
+    const [serverStatusMessage, setServerStatusMessage] = useState("");
     const booted = useRef(false);
     const terminalWriter = useRef<((data: string) => void) | null>(null);
 
@@ -44,6 +53,8 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                 instance.on("server-ready", (port, url) => {
                     console.log(`Server ready at ${url}`);
                     setServerUrl(url);
+                    setServerStatus("ready");
+                    setServerStatusMessage("Server running");
                 });
             } catch (err) {
                 console.error("Failed to boot WebContainer:", err);
@@ -78,7 +89,7 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         return content;
     };
 
-    const runCommand = async (cmd: string, args: string[]) => {
+    const runCommand = async (cmd: string, args: string[]): Promise<number> => {
         if (!webcontainer) throw new Error("WebContainer not booted");
 
         // Write command to terminal
@@ -95,12 +106,92 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
             })
         );
 
-        await process.exit;
+        return await process.exit;
     };
 
     const registerTerminal = (writer: (data: string) => void) => {
         terminalWriter.current = writer;
     };
+
+    // Load project files into WebContainer
+    const loadProjectFiles = useCallback(async (files: Record<string, string>) => {
+        if (!webcontainer || Object.keys(files).length === 0) return;
+
+        setServerStatus("writing-files");
+        setServerStatusMessage("Writing project files...");
+
+        try {
+            let fileCount = 0;
+            const totalFiles = Object.keys(files).length;
+
+            for (const [path, content] of Object.entries(files)) {
+                await writeFile(path, content);
+                fileCount++;
+                setServerStatusMessage(`Writing files... (${fileCount}/${totalFiles})`);
+            }
+
+            console.log(`Wrote ${fileCount} files to WebContainer`);
+        } catch (err) {
+            console.error("Error writing project files:", err);
+            setServerStatus("error");
+            setServerStatusMessage("Failed to write files");
+        }
+    }, [webcontainer]);
+
+    // Start dev server (install deps + npm run dev)
+    const startDevServer = useCallback(async () => {
+        if (!webcontainer) return;
+
+        try {
+            // Check if package.json exists
+            let hasPackageJson = false;
+            try {
+                await webcontainer.fs.readFile("package.json", "utf-8");
+                hasPackageJson = true;
+            } catch {
+                hasPackageJson = false;
+            }
+
+            if (!hasPackageJson) {
+                setServerStatus("idle");
+                setServerStatusMessage("No package.json found");
+                return;
+            }
+
+            // Install dependencies
+            setServerStatus("installing");
+            setServerStatusMessage("Installing dependencies...");
+
+            const installExitCode = await runCommand("npm", ["install"]);
+
+            if (installExitCode !== 0) {
+                setServerStatus("error");
+                setServerStatusMessage("Failed to install dependencies");
+                return;
+            }
+
+            // Start dev server
+            setServerStatus("starting");
+            setServerStatusMessage("Starting dev server...");
+
+            // Don't await - server runs indefinitely
+            const process = await webcontainer.spawn("npm", ["run", "dev"]);
+
+            process.output.pipeTo(
+                new WritableStream({
+                    write(data) {
+                        console.log("[dev]", data);
+                        terminalWriter.current?.(data);
+                    },
+                })
+            );
+
+        } catch (err) {
+            console.error("Error starting dev server:", err);
+            setServerStatus("error");
+            setServerStatusMessage("Failed to start server");
+        }
+    }, [webcontainer, runCommand]);
 
     return (
         <WebContainerContext.Provider
@@ -109,10 +200,14 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                 isLoading,
                 error,
                 serverUrl,
+                serverStatus,
+                serverStatusMessage,
                 writeFile,
                 readFile,
                 runCommand,
                 registerTerminal,
+                loadProjectFiles,
+                startDevServer,
             }}
         >
             {children}

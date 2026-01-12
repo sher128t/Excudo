@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Header } from "~/components/Header";
 import { ChatInterface } from "~/components/ChatInterface";
@@ -9,17 +9,20 @@ import { Sidebar } from "~/components/Sidebar";
 import { X, Loader2 } from "lucide-react";
 import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
+import { useWebContainer } from "~/context/WebContainerContext";
 import { useNavigate } from "react-router";
 
 export default function Editor() {
     const { user, loading: authLoading } = useAuth();
     const { currentProject, openProject, loading: projectLoading } = useProject();
+    const { loadProjectFiles, startDevServer, webcontainer, serverStatus } = useWebContainer();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<"preview" | "code" | "terminal">("preview");
     const [showPreview, setShowPreview] = useState(true);
     const [showCodePanel, setShowCodePanel] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [projectInitialized, setProjectInitialized] = useState(false);
+    const autoStartedRef = useRef(false);
 
     // Mount and load project from sessionStorage
     useEffect(() => {
@@ -34,6 +37,24 @@ export default function Editor() {
             });
         }
     }, [openProject, projectInitialized]);
+
+    // Auto-load files and start server when project has saved files
+    useEffect(() => {
+        if (!currentProject || !webcontainer || autoStartedRef.current) return;
+
+        const files = currentProject.files || {};
+        const hasFiles = Object.keys(files).length > 0;
+
+        if (hasFiles && serverStatus === "idle") {
+            autoStartedRef.current = true;
+            console.log("Auto-starting project with", Object.keys(files).length, "files");
+
+            // Load files then start server
+            loadProjectFiles(files).then(() => {
+                startDevServer();
+            });
+        }
+    }, [currentProject, webcontainer, serverStatus, loadProjectFiles, startDevServer]);
 
     // Redirect to landing if not authenticated
     useEffect(() => {
