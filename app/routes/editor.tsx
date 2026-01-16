@@ -38,16 +38,26 @@ export default function Editor() {
         }
     }, [openProject, projectInitialized]);
 
-    // Auto-load files and start server when project has saved files
+    // Auto-load files and start server when REOPENING a project with saved files
+    // Skip if this is a new project being created
     useEffect(() => {
         if (!currentProject || !webcontainer || autoStartedRef.current) return;
+
+        // Check if this is a NEW project being created
+        const isNewProject = sessionStorage.getItem("isNewProject") === "true";
+        if (isNewProject) {
+            console.log("New project detected - skipping auto-start");
+            // Clear the flag after first check so it works on subsequent navigations
+            sessionStorage.removeItem("isNewProject");
+            return;
+        }
 
         const files = currentProject.files || {};
         const hasFiles = Object.keys(files).length > 0;
 
         if (hasFiles && serverStatus === "idle") {
             autoStartedRef.current = true;
-            console.log("Auto-starting project with", Object.keys(files).length, "files");
+            console.log("Reopening project - auto-starting with", Object.keys(files).length, "files");
 
             // Load files then start server
             loadProjectFiles(files).then(() => {
