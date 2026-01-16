@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, Wrench } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
@@ -14,8 +14,12 @@ export function ChatInterface() {
     const initialPromptHandled = useRef(false);
     const projectLoadedRef = useRef<string | null>(null);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const fileSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+
+    // Track files for saving to project
+    const projectFilesRef = useRef<Record<string, string>>({});
 
     const chatHelpers = useChat({
         api: "/api/chat",
@@ -35,11 +39,38 @@ export function ChatInterface() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // Debounced save of project files
+    const saveFilesToProject = useCallback(() => {
+        if (!currentProject) return;
+
+        const files = projectFilesRef.current;
+        if (Object.keys(files).length === 0) return;
+
+        // Clear existing timeout
+        if (fileSaveTimeoutRef.current) {
+            clearTimeout(fileSaveTimeoutRef.current);
+        }
+
+        // Debounce to batch file saves
+        fileSaveTimeoutRef.current = setTimeout(() => {
+            console.log("Saving files to project:", Object.keys(files));
+
+            // Merge with existing files
+            const mergedFiles = {
+                ...(currentProject.files || {}),
+                ...files,
+            };
+
+            saveProject({ files: mergedFiles });
+        }, 1500);
+    }, [currentProject, saveProject]);
+
     // Process and execute tool calls, then UPDATE the messages with results
     useEffect(() => {
         const processToolCalls = async () => {
             let hasUpdates = false;
             const updatedMessages = [...messages];
+            const newFiles: Record<string, string> = {};
 
             for (let msgIdx = 0; msgIdx < updatedMessages.length; msgIdx++) {
                 const message = updatedMessages[msgIdx];
@@ -66,13 +97,19 @@ export function ChatInterface() {
                             await writeFile(args.path, args.content);
                             result = `Created file: ${args.path}`;
                             console.log(result);
+                            // Track file for saving
+                            newFiles[args.path] = args.content;
                         } else if (toolName === "updateFile") {
                             await writeFile(args.path, args.content);
                             result = `Updated file: ${args.path}`;
                             console.log(result);
+                            // Track file for saving
+                            newFiles[args.path] = args.content;
                         } else if (toolName === "deleteFile") {
                             result = `Deleted file: ${args.path}`;
                             console.log(result);
+                            // Remove from tracked files
+                            delete projectFilesRef.current[args.path];
                         } else if (toolName === "runCommand") {
                             const [cmd, ...cmdArgs] = args.command.split(" ");
                             await runCommand(cmd, cmdArgs);
@@ -102,6 +139,15 @@ export function ChatInterface() {
                 }
             }
 
+            // Add new files to ref and trigger save
+            if (Object.keys(newFiles).length > 0) {
+                projectFilesRef.current = {
+                    ...projectFilesRef.current,
+                    ...newFiles,
+                };
+                saveFilesToProject();
+            }
+
             // Only update state if we made changes
             if (hasUpdates) {
                 console.log("Updating messages with tool results");
@@ -110,17 +156,25 @@ export function ChatInterface() {
         };
 
         processToolCalls();
-    }, [messages, writeFile, runCommand, setMessages]);
+    }, [messages, writeFile, runCommand, setMessages, saveFilesToProject]);
 
     const clearChat = () => {
         setMessages([]);
         processedToolCalls.current.clear();
+        projectFilesRef.current = {};
     };
 
-    // Load chat messages when project changes
+    // Load chat messages and initialize file ref when project changes
     useEffect(() => {
         if (currentProject && projectLoadedRef.current !== currentProject.id) {
             projectLoadedRef.current = currentProject.id;
+
+            // Load existing files into ref
+            if (currentProject.files) {
+                projectFilesRef.current = { ...currentProject.files };
+            }
+
+            // Load chat messages
             if (currentProject.chat_messages && currentProject.chat_messages.length > 0) {
                 setMessages(currentProject.chat_messages);
             }
