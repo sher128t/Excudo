@@ -24,6 +24,9 @@ export default function Editor() {
     const [projectInitialized, setProjectInitialized] = useState(false);
     const autoStartedRef = useRef(false);
 
+    // Track how many files the project had when FIRST loaded from DB
+    const initialFileCountRef = useRef<number | null>(null);
+
     // Mount and load project from sessionStorage
     useEffect(() => {
         setIsMounted(true);
@@ -38,17 +41,25 @@ export default function Editor() {
         }
     }, [openProject, projectInitialized]);
 
-    // Auto-load files and start server when REOPENING a project with saved files
-    // Skip if this is a new project being created
+    // Capture initial file count when project first loads
+    useEffect(() => {
+        if (currentProject && initialFileCountRef.current === null) {
+            const fileCount = Object.keys(currentProject.files || {}).length;
+            initialFileCountRef.current = fileCount;
+            console.log("Project loaded with", fileCount, "files in DB");
+        }
+    }, [currentProject]);
+
+    // Auto-start ONLY if project had files when first loaded (reopening existing project)
     useEffect(() => {
         if (!currentProject || !webcontainer || autoStartedRef.current) return;
+        if (initialFileCountRef.current === null) return; // Wait for initial count
 
-        // Check if this is a NEW project being created
-        const isNewProject = sessionStorage.getItem("isNewProject") === "true";
-        if (isNewProject) {
-            console.log("New project detected - skipping auto-start");
-            // Clear the flag after first check so it works on subsequent navigations
-            sessionStorage.removeItem("isNewProject");
+        // Only auto-start if project HAD files when loaded (not 0)
+        const hadFilesAtLoad = initialFileCountRef.current > 0;
+
+        if (!hadFilesAtLoad) {
+            console.log("New project (0 files at load) - skipping auto-start");
             return;
         }
 
