@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import fileSaver from 'file-saver';
+const { saveAs } = fileSaver;
 
 /**
  * Export project files as a downloadable ZIP file
