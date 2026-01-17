@@ -14,7 +14,7 @@ interface ProjectContextType {
 
     // Project operations
     createNewProject: (name: string) => Promise<Project | null>;
-    saveProject: (data: { files?: Record<string, string>; chat_messages?: any[] }) => Promise<boolean>;
+    saveProject: (data: { files?: Record<string, string>; chat_messages?: any[]; thumbnail?: string }) => Promise<boolean>;
     deleteProjectById: (id: string) => Promise<boolean>;
     renameProjectById: (id: string, name: string) => Promise<boolean>;
     openProject: (id: string) => Promise<Project | null>;
@@ -68,7 +68,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }, [user]);
 
     // Save current project (files and/or chat)
-    const saveProject = useCallback(async (data: { files?: Record<string, string>; chat_messages?: any[] }): Promise<boolean> => {
+    const saveProject = useCallback(async (data: { files?: Record<string, string>; chat_messages?: any[]; thumbnail?: string }): Promise<boolean> => {
         if (!currentProject) return false;
 
         setSaving(true);
@@ -81,6 +81,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                     ...prev,
                     ...(data.files !== undefined ? { files: data.files } : {}),
                     ...(data.chat_messages !== undefined ? { chat_messages: data.chat_messages } : {}),
+                    ...(data.thumbnail !== undefined ? { thumbnail: data.thumbnail } : {}),
                 } : null);
                 setProjects(prev =>
                     prev.map(p => p.id === currentProject.id ? {

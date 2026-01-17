@@ -309,13 +309,27 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
     };
 
     return (
-        <div className="group bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl overflow-hidden hover:border-indigo-500/30 transition-colors">
-            {/* Preview placeholder */}
+        <div className="group bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl hover:border-indigo-500/30 transition-colors relative">
+            {/* Preview thumbnail or placeholder */}
             <div
                 onClick={onOpen}
-                className="h-32 bg-gradient-to-br from-indigo-900/20 to-purple-900/20 flex items-center justify-center cursor-pointer"
+                className="h-32 rounded-t-xl overflow-hidden flex items-center justify-center cursor-pointer relative"
             >
-                <Hammer className="w-8 h-8 text-indigo-500/30" />
+                {project.thumbnail ? (
+                    <img
+                        src={project.thumbnail}
+                        alt={project.name}
+                        className="w-full h-full object-cover object-top"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-900/20 to-purple-900/20 flex items-center justify-center">
+                        <Hammer className="w-8 h-8 text-indigo-500/30" />
+                    </div>
+                )}
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">Open Project</span>
+                </div>
             </div>
 
             {/* Info */}
@@ -338,7 +352,7 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
                             <MoreHorizontal className="w-4 h-4" />
                         </button>
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-1 w-36 bg-[#12121a] border border-[#1e1e2e] rounded-lg shadow-xl py-1 z-50">
+                            <div className="absolute right-0 bottom-full mb-1 w-36 bg-[#12121a] border border-[#1e1e2e] rounded-lg shadow-xl py-1 z-50">
                                 <button
                                     onClick={() => { onOpen(); setShowMenu(false); }}
                                     className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-2"

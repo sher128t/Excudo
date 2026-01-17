@@ -39,6 +39,54 @@ export function ChatInterface() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // Generate a thumbnail for the project using canvas
+    const generateThumbnail = useCallback((projectName: string): string => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return '';
+
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#4f46e5');  // indigo
+        gradient.addColorStop(1, '#7c3aed');  // purple
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Add project name initials
+        const initials = projectName
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.font = 'bold 80px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
+
+        // Add subtle grid pattern
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        for (let i = 0; i < canvas.height; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+        }
+
+        return canvas.toDataURL('image/jpeg', 0.7);
+    }, []);
+
     // Debounced save of project files
     const saveFilesToProject = useCallback(() => {
         if (!currentProject) return;
@@ -61,9 +109,12 @@ export function ChatInterface() {
                 ...files,
             };
 
-            saveProject({ files: mergedFiles });
+            // Generate thumbnail if not already set
+            const thumbnail = currentProject.thumbnail || generateThumbnail(currentProject.name);
+
+            saveProject({ files: mergedFiles, thumbnail });
         }, 1500);
-    }, [currentProject, saveProject]);
+    }, [currentProject, saveProject, generateThumbnail]);
 
     // Process and execute tool calls, then UPDATE the messages with results
     useEffect(() => {

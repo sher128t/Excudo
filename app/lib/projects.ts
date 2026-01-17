@@ -71,10 +71,10 @@ export async function getProject(projectId: string): Promise<Project | null> {
     return data as Project;
 }
 
-// Update project (files and/or chat messages)
+// Update project (files and/or chat messages and/or thumbnail)
 export async function saveProjectData(
     projectId: string,
-    data: { files?: Record<string, string>; chat_messages?: any[] }
+    data: { files?: Record<string, string>; chat_messages?: any[]; thumbnail?: string }
 ): Promise<boolean> {
     const supabase = getClient();
 
@@ -87,6 +87,9 @@ export async function saveProjectData(
     }
     if (data.chat_messages !== undefined) {
         updateData.chat_messages = data.chat_messages;
+    }
+    if (data.thumbnail !== undefined) {
+        updateData.thumbnail = data.thumbnail;
     }
 
     const { error } = await supabase
