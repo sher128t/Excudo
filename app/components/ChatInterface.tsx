@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
@@ -18,6 +18,10 @@ export function ChatInterface() {
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
+    // Error handling state
+    const [error, setError] = useState<{ message: string; retryContent?: string } | null>(null);
+    const lastMessageRef = useRef<string>("");
+
     // Track files for saving to project
     const projectFilesRef = useRef<Record<string, string>>({});
 
@@ -26,13 +30,41 @@ export function ChatInterface() {
         maxSteps: 10,
         onError: (error) => {
             console.error("Chat error:", error);
+            // Parse error message for user-friendly display
+            let errorMessage = "Something went wrong. Please try again.";
+            if (error.message.includes("rate limit")) {
+                errorMessage = "Rate limit reached. Please wait a moment and try again.";
+            } else if (error.message.includes("network") || error.message.includes("fetch")) {
+                errorMessage = "Network error. Please check your connection and try again.";
+            } else if (error.message.includes("timeout")) {
+                errorMessage = "Request timed out. Please try again.";
+            } else if (error.message.includes("credit")) {
+                errorMessage = "You've run out of credits. Please upgrade your plan.";
+            }
+            setError({ message: errorMessage, retryContent: lastMessageRef.current });
         },
         onFinish: () => {
             console.log("Chat finished");
+            setError(null); // Clear any error on success
         },
     });
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, setInput, append, stop } = chatHelpers;
+    const { messages, input, handleInputChange, handleSubmit: originalHandleSubmit, isLoading, setMessages, setInput, append, stop } = chatHelpers;
+
+    // Wrap handleSubmit to track last message
+    const handleSubmit = useCallback((e: React.FormEvent) => {
+        lastMessageRef.current = input;
+        setError(null);
+        originalHandleSubmit(e);
+    }, [input, originalHandleSubmit]);
+
+    // Retry function
+    const handleRetry = useCallback(() => {
+        if (error?.retryContent) {
+            setError(null);
+            append({ role: "user", content: error.retryContent });
+        }
+    }, [error, append]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -384,6 +416,27 @@ export function ChatInterface() {
                                 <span>Thinking</span>
                                 <span className="animate-pulse">...</span>
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* Error banner with retry */}
+                {error && !isLoading && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-sm text-red-400 font-medium mb-1">Error</p>
+                                <p className="text-sm text-red-300/80">{error.message}</p>
+                            </div>
+                            {error.retryContent && (
+                                <button
+                                    onClick={handleRetry}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Retry
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

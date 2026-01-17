@@ -3,11 +3,13 @@ import { Link, useNavigate } from "react-router";
 import {
     Hammer, Settings, ChevronDown, Code, Terminal as TerminalIcon,
     BarChart3, Cloud, Palette, Shield, Zap, Share2,
-    Maximize2, Minimize2, Eye, EyeOff, Home, Trash2, AlertTriangle
+    Maximize2, Minimize2, Eye, EyeOff, Home, Trash2, AlertTriangle,
+    Download, Check, X, Loader2
 } from "lucide-react";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { UserMenu } from "./UserMenu";
 import { useProject } from "~/context/ProjectContext";
+import { exportProjectAsZip } from "~/lib/export";
 
 interface HeaderProps {
     activeTab: "preview" | "code" | "terminal";
@@ -19,7 +21,7 @@ interface HeaderProps {
 interface DropdownProps {
     label: string;
     icon: React.ReactNode;
-    items: { label: string; action?: () => void; disabled?: boolean; danger?: boolean }[];
+    items: { label: string; action?: () => void; disabled?: boolean; danger?: boolean; loading?: boolean }[];
 }
 
 function Dropdown({ label, icon, items }: DropdownProps) {
@@ -53,17 +55,39 @@ function Dropdown({ label, icon, items }: DropdownProps) {
                             key={i}
                             onClick={() => {
                                 item.action?.();
-                                setIsOpen(false);
+                                if (!item.loading) setIsOpen(false);
                             }}
-                            disabled={item.disabled}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${item.danger ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-white'
+                            disabled={item.disabled || item.loading}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 ${item.danger ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-white'
                                 }`}
                         >
+                            {item.loading && <Loader2 className="w-3 h-3 animate-spin" />}
                             {item.label}
                         </button>
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+// Toast notification component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 4000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className={`fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border animate-slide-up z-[200] ${type === 'success'
+                ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}>
+            {type === 'success' ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={onClose} className="ml-2 hover:opacity-70">
+                <X className="w-4 h-4" />
+            </button>
         </div>
     );
 }
@@ -116,6 +140,8 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
     const { currentProject, deleteProjectById } = useProject();
     const navigate = useNavigate();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const handleDelete = async () => {
         if (!currentProject) return;
@@ -123,6 +149,27 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
         await deleteProjectById(currentProject.id);
         setShowDeleteModal(false);
         navigate("/");
+    };
+
+    const handleExport = async () => {
+        if (!currentProject || !currentProject.files) {
+            setToast({ message: "No files to export", type: "error" });
+            return;
+        }
+
+        setIsExporting(true);
+        try {
+            const success = await exportProjectAsZip(currentProject.name, currentProject.files);
+            if (success) {
+                setToast({ message: "Project downloaded successfully!", type: "success" });
+            } else {
+                setToast({ message: "Failed to export project", type: "error" });
+            }
+        } catch (error) {
+            setToast({ message: "Error exporting project", type: "error" });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     return (
@@ -170,7 +217,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                         icon={<Code className="w-4 h-4" />}
                         items={[
                             { label: "View Source Code", action: () => onTabChange("code") },
-                            { label: "Download Project", disabled: true },
+                            { label: isExporting ? "Exporting..." : "Download ZIP", action: handleExport, loading: isExporting },
                             { label: "Export to GitHub", disabled: true },
                         ]}
                     />
@@ -204,9 +251,18 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                 {/* Right - Actions */}
                 <div className="flex items-center gap-3">
                     <CreditsDisplay />
+                    {/* Quick Export Button */}
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                    >
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        <span className="hidden lg:inline">Export</span>
+                    </button>
                     <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors">
                         <Share2 className="w-4 h-4" />
-                        <span>Share</span>
+                        <span className="hidden lg:inline">Share</span>
                     </button>
                     <UserMenu />
                 </div>
@@ -219,6 +275,24 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                 onConfirm={handleDelete}
                 projectName={currentProject?.name || "this project"}
             />
+
+            {/* Toast notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Custom animation */}
+            <style>{`
+                @keyframes slide-up {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-slide-up { animation: slide-up 0.3s ease-out; }
+            `}</style>
         </>
     );
 }
