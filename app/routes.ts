@@ -1,7 +1,8 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
-    index("routes/dashboard.tsx"),  // Dashboard is now the home page
+    index("routes/_index.tsx"),  // Index redirects based on auth state
+    route("dashboard", "routes/dashboard.tsx"),  // Dashboard route
     route("editor", "routes/editor.tsx"),  // Editor/workspace route
     route("api/chat", "routes/api.chat.ts"),
     route("auth/login", "routes/auth.login.tsx"),
@@ -9,5 +10,3 @@ export default [
     route("auth/callback", "routes/auth.callback.tsx"),
     route("landing", "routes/landing.tsx"),
 ] satisfies RouteConfig;
-
-

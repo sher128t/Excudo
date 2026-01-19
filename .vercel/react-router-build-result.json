@@ -10,6 +10,7 @@
       }
     },
     "routeIdToServerBundleId": {
+      "routes/_index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/dashboard": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/editor": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.chat": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -25,11 +26,20 @@
         "path": "",
         "config": {}
       },
+      "routes/_index": {
+        "id": "routes/_index",
+        "parentId": "root",
+        "file": "app/routes/_index.tsx",
+        "index": true,
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
       "routes/dashboard": {
         "id": "routes/dashboard",
         "parentId": "root",
         "file": "app/routes/dashboard.tsx",
-        "index": true,
+        "path": "dashboard",
         "config": {
           "runtime": "nodejs"
         }
@@ -107,11 +117,17 @@
         "file": "root.tsx",
         "path": ""
       },
+      "routes/_index": {
+        "id": "routes/_index",
+        "parentId": "root",
+        "file": "routes/_index.tsx",
+        "index": true
+      },
       "routes/dashboard": {
         "id": "routes/dashboard",
         "parentId": "root",
         "file": "routes/dashboard.tsx",
-        "index": true
+        "path": "dashboard"
       },
       "routes/editor": {
         "id": "routes/editor",
@@ -164,8 +180,12 @@
         "file": "root.tsx",
         "children": [
           {
-            "file": "routes/dashboard.tsx",
+            "file": "routes/_index.tsx",
             "index": true
+          },
+          {
+            "file": "routes/dashboard.tsx",
+            "path": "dashboard"
           },
           {
             "file": "routes/editor.tsx",
