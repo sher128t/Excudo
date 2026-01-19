@@ -7,7 +7,7 @@ import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
 export function ChatInterface() {
-    const { writeFile, readFile, runCommand } = useWebContainer();
+    const { writeFile, readFile, runCommand, resetContainer } = useWebContainer();
     const { currentProject, saveProject } = useProject();
     const processedToolCalls = useRef<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -300,11 +300,19 @@ export function ChatInterface() {
             // Set flag so editor knows this is a new project (don't auto-start)
             sessionStorage.setItem("isNewProject", "true");
             sessionStorage.removeItem("initialPrompt");
-            setTimeout(() => {
-                append({ role: "user", content: initialPrompt });
-            }, 500);
+
+            // Reset WebContainer before starting new project
+            resetContainer().then(() => {
+                // Clear tracked files for new project
+                projectFilesRef.current = {};
+                processedToolCalls.current = new Set();
+
+                setTimeout(() => {
+                    append({ role: "user", content: initialPrompt });
+                }, 500);
+            });
         }
-    }, [append]);
+    }, [append, resetContainer]);
 
     const getToolIcon = (toolName: string) => {
         switch (toolName) {

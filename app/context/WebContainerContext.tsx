@@ -24,6 +24,7 @@ interface WebContainerContextType {
     registerTerminal: (writer: (data: string) => void) => void;
     loadProjectFiles: (files: Record<string, string>) => Promise<void>;
     startDevServer: () => Promise<void>;
+    resetContainer: () => Promise<void>;
 }
 
 const WebContainerContext = createContext<WebContainerContextType | null>(null);
@@ -193,6 +194,34 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         }
     }, [webcontainer, runCommand]);
 
+    // Reset container - clear all files and reset state for new project
+    const resetContainer = useCallback(async () => {
+        if (!webcontainer) return;
+
+        console.log("Resetting WebContainer for new project...");
+        setServerUrl(null);
+        setServerStatus("idle");
+        setServerStatusMessage("");
+
+        try {
+            // Get list of all files/folders in root
+            const entries = await webcontainer.fs.readdir("/");
+
+            // Delete each entry
+            for (const entry of entries) {
+                try {
+                    await webcontainer.fs.rm(`/${entry}`, { recursive: true });
+                } catch (e) {
+                    // Ignore errors for individual files
+                }
+            }
+
+            console.log("WebContainer reset complete");
+        } catch (err) {
+            console.error("Error resetting WebContainer:", err);
+        }
+    }, [webcontainer]);
+
     return (
         <WebContainerContext.Provider
             value={{
@@ -208,6 +237,7 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                 registerTerminal,
                 loadProjectFiles,
                 startDevServer,
+                resetContainer,
             }}
         >
             {children}
