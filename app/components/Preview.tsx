@@ -56,7 +56,7 @@ export function Preview() {
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon()}
                     {serverUrl ? (
-                        <span className="text-sm text-gray-400 truncate">{serverUrl}</span>
+                        <span className="text-sm text-emerald-400">Preview running</span>
                     ) : (
                         <span className={`text-sm ${getStatusColor()}`}>
                             {serverStatusMessage || "Waiting for project..."}
