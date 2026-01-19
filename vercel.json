@@ -1,0 +1,31 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "framework": "react-router",
+    "buildCommand": "npm run build",
+    "outputDirectory": "build/client",
+    "installCommand": "npm install",
+    "regions": [
+        "iad1"
+    ],
+    "functions": {
+        "build/server/**/*.js": {
+            "memory": 1024,
+            "maxDuration": 30
+        }
+    },
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Cross-Origin-Embedder-Policy",
+                    "value": "require-corp"
+                },
+                {
+                    "key": "Cross-Origin-Opener-Policy",
+                    "value": "same-origin"
+                }
+            ]
+        }
+    ]
+}
