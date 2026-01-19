@@ -7,7 +7,7 @@ import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 
 export function ChatInterface() {
-    const { writeFile, readFile, runCommand, resetContainer } = useWebContainer();
+    const { writeFile, readFile, runCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
     const { currentProject, saveProject } = useProject();
     const processedToolCalls = useRef<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,6 +65,24 @@ export function ChatInterface() {
             append({ role: "user", content: error.retryContent });
         }
     }, [error, append]);
+
+    // Track previous loading state for detecting when chat finishes
+    const wasLoadingRef = useRef(false);
+
+    // Auto-start dev server when chat finishes and files were created
+    useEffect(() => {
+        // Detect when isLoading transitions from true to false (chat finished)
+        if (wasLoadingRef.current && !isLoading) {
+            const hasFiles = Object.keys(projectFilesRef.current).length > 0;
+
+            // Only auto-start if we have files and server is idle
+            if (hasFiles && serverStatus === "idle") {
+                console.log("Chat finished with files - starting dev server");
+                startDevServer();
+            }
+        }
+        wasLoadingRef.current = isLoading;
+    }, [isLoading, serverStatus, startDevServer]);
 
     // Auto-scroll to bottom
     useEffect(() => {
