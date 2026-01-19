@@ -2,18 +2,17 @@
 
 **AI-powered app builder** — Describe what you want, watch it build in real-time.
 
-![Forge Screenshot](https://via.placeholder.com/800x400/1a1a2e/6366f1?text=Forge+AI+App+Builder)
 
-## ✨ Features
+## Features
 
-- **🤖 AI-Powered Generation** — Describe your app in plain English, Claude AI builds it
-- **⚡ Real-Time Preview** — See changes instantly as code is written
-- **📝 Live Code Editor** — Monaco editor with file tree, syntax highlighting, save
-- **💻 Built-in Terminal** — Run commands directly in the browser
-- **📦 Export as ZIP** — Download your complete project anytime
-- **🚀 One-Click Deploy** — Deploy to Vercel or Netlify (coming soon)
+- **AI-Powered Generation** — Describe your app in plain English, Claude AI builds it
+- **Real-Time Preview** — See changes instantly as code is written
+- **Live Code Editor** — Monaco editor with file tree, syntax highlighting, save
+- **Built-in Terminal** — Run commands directly in the browser
+- **Export as ZIP** — Download your complete project anytime
+- **One-Click Deploy** — Deploy to Vercel
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: React 19, React Router v7, TypeScript
 - **Styling**: Tailwind CSS
@@ -23,7 +22,7 @@
 - **Auth**: Supabase Auth
 - **Editor**: Monaco Editor
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -71,7 +70,7 @@
    http://localhost:5173
    ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 forge/
@@ -86,7 +85,7 @@ forge/
 └── vercel.json         # Vercel deployment config
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
 
@@ -97,14 +96,10 @@ forge/
 
 See [deployment guide](docs/deployment.md) for detailed instructions.
 
-## 📝 License
+## License
 
 MIT License - feel free to use for personal or commercial projects.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please open an issue or PR.
-
----
-
-Built with ❤️ using AI
