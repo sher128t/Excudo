@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { Hammer, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -8,15 +8,45 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loginSuccess, setLoginSuccess] = useState(false);
     const { signIn, user } = useAuth();
     const navigate = useNavigate();
+    const hasNavigatedRef = useRef(false);
 
-    // If already logged in, redirect to main app
+    // Redirect when user state changes (after successful login)
     useEffect(() => {
-        if (user) {
-            navigate("/");
+        if (user && !hasNavigatedRef.current) {
+            hasNavigatedRef.current = true;
+            navigate("/dashboard", { replace: true });
         }
     }, [user, navigate]);
+
+    // Also handle navigation after login success with polling
+    useEffect(() => {
+        if (!loginSuccess) return;
+
+        // Poll for user state change
+        const checkUser = setInterval(() => {
+            if (user && !hasNavigatedRef.current) {
+                hasNavigatedRef.current = true;
+                clearInterval(checkUser);
+                navigate("/dashboard", { replace: true });
+            }
+        }, 100);
+
+        // Timeout after 5 seconds - force reload if stuck
+        const timeout = setTimeout(() => {
+            clearInterval(checkUser);
+            if (!hasNavigatedRef.current) {
+                window.location.href = "/dashboard";
+            }
+        }, 5000);
+
+        return () => {
+            clearInterval(checkUser);
+            clearTimeout(timeout);
+        };
+    }, [loginSuccess, user, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,10 +60,9 @@ export default function Login() {
                 setError(result.error);
                 setLoading(false);
             } else {
-                // Success - wait for auth state to update and redirect
-                setTimeout(() => {
-                    navigate("/");
-                }, 500);
+                // Success - mark as successful and let the effect handle navigation
+                setLoginSuccess(true);
+                // Keep loading state true while waiting for redirect
             }
         } catch (err) {
             setError("Something went wrong. Please try again.");
@@ -63,6 +92,13 @@ export default function Login() {
                         </div>
                     )}
 
+                    {loginSuccess && (
+                        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Signing in...
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm text-gray-400 mb-1.5">Email</label>
                         <div className="relative">
@@ -72,7 +108,8 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50"
+                                disabled={loginSuccess}
+                                className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -87,7 +124,8 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50"
+                                disabled={loginSuccess}
+                                className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -95,7 +133,7 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || loginSuccess}
                         className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         {loading ? (
