@@ -1,0 +1,203 @@
+{
+  "buildManifest": {
+    "serverBundles": {
+      "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0": {
+        "id": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+        "file": "build/server/nodejs_eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
+        "config": {
+          "runtime": "nodejs"
+        }
+      }
+    },
+    "routeIdToServerBundleId": {
+      "routes/dashboard": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/editor": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.chat": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth.login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth.signup": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth.callback": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/landing": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "app/root.tsx",
+        "path": "",
+        "config": {}
+      },
+      "routes/dashboard": {
+        "id": "routes/dashboard",
+        "parentId": "root",
+        "file": "app/routes/dashboard.tsx",
+        "index": true,
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/editor": {
+        "id": "routes/editor",
+        "parentId": "root",
+        "file": "app/routes/editor.tsx",
+        "path": "editor",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/api.chat": {
+        "id": "routes/api.chat",
+        "parentId": "root",
+        "file": "app/routes/api.chat.ts",
+        "path": "api/chat",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/auth.login": {
+        "id": "routes/auth.login",
+        "parentId": "root",
+        "file": "app/routes/auth.login.tsx",
+        "path": "auth/login",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/auth.signup": {
+        "id": "routes/auth.signup",
+        "parentId": "root",
+        "file": "app/routes/auth.signup.tsx",
+        "path": "auth/signup",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/auth.callback": {
+        "id": "routes/auth.callback",
+        "parentId": "root",
+        "file": "app/routes/auth.callback.tsx",
+        "path": "auth/callback",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/landing": {
+        "id": "routes/landing",
+        "parentId": "root",
+        "file": "app/routes/landing.tsx",
+        "path": "landing",
+        "config": {
+          "runtime": "nodejs"
+        }
+      }
+    }
+  },
+  "reactRouterConfig": {
+    "appDirectory": "C:/Users/shehr/.gemini/antigravity/scratch/forge/app",
+    "basename": "/",
+    "buildDirectory": "C:/Users/shehr/.gemini/antigravity/scratch/forge/build",
+    "future": {
+      "unstable_optimizeDeps": false,
+      "unstable_subResourceIntegrity": false,
+      "v8_middleware": false,
+      "v8_splitRouteModules": false,
+      "v8_viteEnvironmentApi": false
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "root.tsx",
+        "path": ""
+      },
+      "routes/dashboard": {
+        "id": "routes/dashboard",
+        "parentId": "root",
+        "file": "routes/dashboard.tsx",
+        "index": true
+      },
+      "routes/editor": {
+        "id": "routes/editor",
+        "parentId": "root",
+        "file": "routes/editor.tsx",
+        "path": "editor"
+      },
+      "routes/api.chat": {
+        "id": "routes/api.chat",
+        "parentId": "root",
+        "file": "routes/api.chat.ts",
+        "path": "api/chat"
+      },
+      "routes/auth.login": {
+        "id": "routes/auth.login",
+        "parentId": "root",
+        "file": "routes/auth.login.tsx",
+        "path": "auth/login"
+      },
+      "routes/auth.signup": {
+        "id": "routes/auth.signup",
+        "parentId": "root",
+        "file": "routes/auth.signup.tsx",
+        "path": "auth/signup"
+      },
+      "routes/auth.callback": {
+        "id": "routes/auth.callback",
+        "parentId": "root",
+        "file": "routes/auth.callback.tsx",
+        "path": "auth/callback"
+      },
+      "routes/landing": {
+        "id": "routes/landing",
+        "parentId": "root",
+        "file": "routes/landing.tsx",
+        "path": "landing"
+      }
+    },
+    "routeDiscovery": {
+      "mode": "lazy",
+      "manifestPath": "/__manifest"
+    },
+    "serverBuildFile": "index.js",
+    "serverModuleFormat": "esm",
+    "ssr": true,
+    "unstable_routeConfig": [
+      {
+        "id": "root",
+        "path": "",
+        "file": "root.tsx",
+        "children": [
+          {
+            "file": "routes/dashboard.tsx",
+            "index": true
+          },
+          {
+            "file": "routes/editor.tsx",
+            "path": "editor"
+          },
+          {
+            "file": "routes/api.chat.ts",
+            "path": "api/chat"
+          },
+          {
+            "file": "routes/auth.login.tsx",
+            "path": "auth/login"
+          },
+          {
+            "file": "routes/auth.signup.tsx",
+            "path": "auth/signup"
+          },
+          {
+            "file": "routes/auth.callback.tsx",
+            "path": "auth/callback"
+          },
+          {
+            "file": "routes/landing.tsx",
+            "path": "landing"
+          }
+        ]
+      }
+    ]
+  },
+  "viteConfig": {
+    "build": {
+      "assetsDir": "assets"
+    }
+  }
+}
