@@ -1,87 +1,110 @@
-# Welcome to React Router!
+# Forge ⚒️
 
-A modern, production-ready template for building full-stack React applications using React Router.
+**AI-powered app builder** — Describe what you want, watch it build in real-time.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+![Forge Screenshot](https://via.placeholder.com/800x400/1a1a2e/6366f1?text=Forge+AI+App+Builder)
 
-## Features
+## ✨ Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **🤖 AI-Powered Generation** — Describe your app in plain English, Claude AI builds it
+- **⚡ Real-Time Preview** — See changes instantly as code is written
+- **📝 Live Code Editor** — Monaco editor with file tree, syntax highlighting, save
+- **💻 Built-in Terminal** — Run commands directly in the browser
+- **📦 Export as ZIP** — Download your complete project anytime
+- **🚀 One-Click Deploy** — Deploy to Vercel or Netlify (coming soon)
 
-## Getting Started
+## 🛠️ Tech Stack
+
+- **Frontend**: React 19, React Router v7, TypeScript
+- **Styling**: Tailwind CSS
+- **AI**: Anthropic Claude (via AI SDK)
+- **Runtime**: WebContainers (browser-based Node.js)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth
+- **Editor**: Monaco Editor
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or pnpm
+- Supabase account
+- Anthropic API key
 
 ### Installation
 
-Install the dependencies:
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/forge.git
+   cd forge
+   ```
 
-```bash
-npm install
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Development
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Fill in your `.env` file:
+   ```env
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   ANTHROPIC_API_KEY=your_anthropic_api_key
+   ```
 
-Start the development server with HMR:
+4. **Set up Supabase**
+   - Create a new Supabase project
+   - Run the SQL from `supabase/schema.sql` in your SQL editor
 
-```bash
-npm run dev
-```
+5. **Start the dev server**
+   ```bash
+   npm run dev
+   ```
 
-Your application will be available at `http://localhost:5173`.
+6. **Open in browser**
+   ```
+   http://localhost:5173
+   ```
 
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
+## 📁 Project Structure
 
 ```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+forge/
+├── app/
+│   ├── components/     # React components
+│   ├── context/        # React contexts (Auth, Project, WebContainer)
+│   ├── lib/            # Utilities and helpers
+│   ├── routes/         # Page routes
+│   └── store/          # Jotai atoms
+├── public/             # Static assets
+├── supabase/           # Database schema
+└── vercel.json         # Vercel deployment config
 ```
 
-## Styling
+## 🚀 Deployment
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy!
+
+See [deployment guide](docs/deployment.md) for detailed instructions.
+
+## 📝 License
+
+MIT License - feel free to use for personal or commercial projects.
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or PR.
 
 ---
 
-Built with ❤️ using React Router
+Built with ❤️ using AI
