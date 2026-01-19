@@ -68,18 +68,24 @@ export function ChatInterface() {
 
     // Track previous loading state for detecting when chat finishes
     const wasLoadingRef = useRef(false);
+    const devServerStartedRef = useRef(false);
 
     // Auto-start dev server when chat finishes and files were created
     useEffect(() => {
         // Detect when isLoading transitions from true to false (chat finished)
         if (wasLoadingRef.current && !isLoading) {
-            const hasFiles = Object.keys(projectFilesRef.current).length > 0;
+            // Small delay to ensure all file writes are processed
+            setTimeout(() => {
+                const hasFiles = Object.keys(projectFilesRef.current).length > 0;
+                const hasPackageJson = projectFilesRef.current["package.json"] || projectFilesRef.current["/package.json"];
 
-            // Only auto-start if we have files and server is idle
-            if (hasFiles && serverStatus === "idle") {
-                console.log("Chat finished with files - starting dev server");
-                startDevServer();
-            }
+                // Only auto-start if we have files, have package.json, server is idle, and haven't started yet
+                if (hasFiles && hasPackageJson && serverStatus === "idle" && !devServerStartedRef.current) {
+                    console.log("Chat finished with files - starting dev server");
+                    devServerStartedRef.current = true;
+                    startDevServer();
+                }
+            }, 500);
         }
         wasLoadingRef.current = isLoading;
     }, [isLoading, serverStatus, startDevServer]);
@@ -321,9 +327,10 @@ export function ChatInterface() {
 
             // Reset WebContainer before starting new project
             resetContainer().then(() => {
-                // Clear tracked files for new project
+                // Clear tracked files and refs for new project
                 projectFilesRef.current = {};
                 processedToolCalls.current = new Set();
+                devServerStartedRef.current = false;
 
                 setTimeout(() => {
                     append({ role: "user", content: initialPrompt });
