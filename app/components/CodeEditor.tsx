@@ -4,111 +4,7 @@ import { selectedFileAtom, fileContentAtom } from "~/store/atoms";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
 import { useEffect, useCallback, useState } from "react";
-import { File, Folder, ChevronRight, ChevronDown, Save, X, RefreshCw } from "lucide-react";
-
-// File tree component
-function FileTree({ files, onSelectFile, selectedFile }: {
-    files: Record<string, string>;
-    onSelectFile: (path: string) => void;
-    selectedFile: string | null;
-}) {
-    const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(['src', 'src/components']));
-
-    // Build tree structure from flat file list
-    const buildTree = (files: Record<string, string>) => {
-        const tree: Record<string, any> = {};
-
-        Object.keys(files).forEach(path => {
-            const parts = path.replace(/^\//, '').split('/');
-            let current = tree;
-
-            parts.forEach((part, i) => {
-                if (i === parts.length - 1) {
-                    current[part] = { type: 'file', path };
-                } else {
-                    if (!current[part]) {
-                        current[part] = { type: 'dir', children: {} };
-                    }
-                    current = current[part].children;
-                }
-            });
-        });
-
-        return tree;
-    };
-
-    const toggleDir = (path: string) => {
-        setExpandedDirs(prev => {
-            const next = new Set(prev);
-            if (next.has(path)) {
-                next.delete(path);
-            } else {
-                next.add(path);
-            }
-            return next;
-        });
-    };
-
-    const renderNode = (name: string, node: any, path: string = '', depth: number = 0) => {
-        const fullPath = path ? `${path}/${name}` : name;
-
-        if (node.type === 'file') {
-            const isSelected = selectedFile === node.path;
-            return (
-                <button
-                    key={fullPath}
-                    onClick={() => onSelectFile(node.path)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-white/5 transition-colors ${isSelected ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-400'
-                        }`}
-                    style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                >
-                    <File className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{name}</span>
-                </button>
-            );
-        }
-
-        const isExpanded = expandedDirs.has(fullPath);
-
-        return (
-            <div key={fullPath}>
-                <button
-                    onClick={() => toggleDir(fullPath)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 transition-colors"
-                    style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                >
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    <Folder className="w-4 h-4 text-indigo-400" />
-                    <span>{name}</span>
-                </button>
-                {isExpanded && node.children && (
-                    <div>
-                        {Object.entries(node.children)
-                            .sort(([, a]: [string, any], [, b]: [string, any]) => {
-                                if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-                                return 0;
-                            })
-                            .map(([childName, childNode]) =>
-                                renderNode(childName, childNode, fullPath, depth + 1)
-                            )}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    const tree = buildTree(files);
-    const sortedEntries = Object.entries(tree).sort(([, a]: [string, any], [, b]: [string, any]) => {
-        if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-        return 0;
-    });
-
-    return (
-        <div className="h-full overflow-y-auto">
-            {sortedEntries.map(([name, node]) => renderNode(name, node))}
-        </div>
-    );
-}
+import { File, Save, X, RefreshCw } from "lucide-react";
 
 export function CodeEditor() {
     const [selectedFile, setSelectedFile] = useAtom(selectedFileAtom);
@@ -207,105 +103,84 @@ export function CodeEditor() {
     };
 
     return (
-        <div className="h-full w-full flex bg-[#1e1e1e]">
-            {/* File Tree Sidebar */}
-            <div className="w-56 border-r border-[#2d2d2d] bg-[#18181b] flex flex-col">
-                <div className="px-3 py-2 border-b border-[#2d2d2d] text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Files
+        <div className="h-full w-full flex flex-col bg-[#1e1e1e]">
+            {/* File Tab Bar */}
+            {selectedFile && (
+                <div className="h-10 bg-[#252526] border-b border-[#2d2d2d] flex items-center px-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1e1e] rounded-t text-sm">
+                        <File className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-300">{selectedFile.split('/').pop()}</span>
+                        {hasChanges && <span className="w-2 h-2 bg-indigo-400 rounded-full" />}
+                        <button
+                            onClick={() => setSelectedFile(null)}
+                            className="ml-2 text-gray-500 hover:text-white"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    </div>
+                    <div className="flex-1" />
+                    {/* Save button */}
+                    <button
+                        onClick={handleSave}
+                        disabled={!hasChanges || isSaving}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${hasChanges
+                                ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30'
+                                : 'text-gray-500 cursor-not-allowed'
+                            }`}
+                    >
+                        {isSaving ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                    </button>
                 </div>
-                {Object.keys(files).length > 0 ? (
-                    <FileTree
-                        files={files}
-                        onSelectFile={setSelectedFile}
-                        selectedFile={selectedFile}
+            )}
+
+            {/* Error banner */}
+            {error && (
+                <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2 text-sm text-red-400 flex items-center justify-between flex-shrink-0">
+                    <span>{error}</span>
+                    <button onClick={() => setError(null)} className="hover:opacity-70">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Monaco Editor */}
+            <div className="flex-1 min-h-0">
+                {selectedFile ? (
+                    <Editor
+                        height="100%"
+                        language={getLanguage(selectedFile)}
+                        value={fileContent}
+                        theme="vs-dark"
+                        onChange={(value) => setFileContent(value || "")}
+                        onMount={handleEditorMount}
+                        options={{
+                            minimap: { enabled: true },
+                            fontSize: 14,
+                            wordWrap: "on",
+                            automaticLayout: true,
+                            scrollBeyondLastLine: false,
+                            lineNumbers: "on",
+                            renderWhitespace: "selection",
+                            tabSize: 2,
+                            insertSpaces: true,
+                            folding: true,
+                            bracketPairColorization: { enabled: true },
+                        }}
                     />
                 ) : (
-                    <div className="p-3 text-sm text-gray-500">
-                        No files yet. Create a project first.
-                    </div>
-                )}
-            </div>
-
-            {/* Editor */}
-            <div className="flex-1 flex flex-col">
-                {/* File Tab Bar */}
-                {selectedFile && (
-                    <div className="h-10 bg-[#252526] border-b border-[#2d2d2d] flex items-center px-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1e1e] rounded-t text-sm">
-                            <File className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">{selectedFile.split('/').pop()}</span>
-                            {hasChanges && <span className="w-2 h-2 bg-indigo-400 rounded-full" />}
-                            <button
-                                onClick={() => setSelectedFile(null)}
-                                className="ml-2 text-gray-500 hover:text-white"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4">
+                        <File className="w-16 h-16 opacity-20" />
+                        <div className="text-center">
+                            <p className="text-lg font-medium text-gray-400">No file selected</p>
+                            <p className="text-sm">Select a file from the sidebar to start editing</p>
                         </div>
-                        <div className="flex-1" />
-                        {/* Save button */}
-                        <button
-                            onClick={handleSave}
-                            disabled={!hasChanges || isSaving}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${hasChanges
-                                    ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30'
-                                    : 'text-gray-500 cursor-not-allowed'
-                                }`}
-                        >
-                            {isSaving ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Save className="w-4 h-4" />
-                            )}
-                            <span>{isSaving ? 'Saving...' : 'Save'}</span>
-                        </button>
                     </div>
                 )}
-
-                {/* Error banner */}
-                {error && (
-                    <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2 text-sm text-red-400 flex items-center justify-between">
-                        <span>{error}</span>
-                        <button onClick={() => setError(null)} className="hover:opacity-70">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-
-                {/* Monaco Editor */}
-                <div className="flex-1">
-                    {selectedFile ? (
-                        <Editor
-                            height="100%"
-                            language={getLanguage(selectedFile)}
-                            value={fileContent}
-                            theme="vs-dark"
-                            onChange={(value) => setFileContent(value || "")}
-                            onMount={handleEditorMount}
-                            options={{
-                                minimap: { enabled: true },
-                                fontSize: 14,
-                                wordWrap: "on",
-                                automaticLayout: true,
-                                scrollBeyondLastLine: false,
-                                lineNumbers: "on",
-                                renderWhitespace: "selection",
-                                tabSize: 2,
-                                insertSpaces: true,
-                                folding: true,
-                                bracketPairColorization: { enabled: true },
-                            }}
-                        />
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4">
-                            <File className="w-16 h-16 opacity-20" />
-                            <div className="text-center">
-                                <p className="text-lg font-medium text-gray-400">No file selected</p>
-                                <p className="text-sm">Select a file from the sidebar to start editing</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
             </div>
         </div>
     );

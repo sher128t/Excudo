@@ -120,10 +120,6 @@ export default function Editor() {
             />
 
             <div className="flex-1 flex overflow-hidden">
-                {showCodePanel && (
-                    <Sidebar />
-                )}
-
                 <PanelGroup direction="horizontal" className="flex-1">
                     <Panel defaultSize={showPreview ? 35 : 100} minSize={25}>
                         <ChatInterface />
@@ -148,15 +144,20 @@ export default function Editor() {
                                                 <X className="w-4 h-4 text-gray-400" />
                                             </button>
                                         </div>
-                                        <PanelGroup direction="vertical" className="flex-1">
-                                            <Panel defaultSize={70}>
-                                                {isMounted && <CodeEditor />}
-                                            </Panel>
-                                            <PanelResizeHandle className="h-1 bg-[#1e1e2e] hover:bg-indigo-500/50 transition-colors cursor-row-resize" />
-                                            <Panel defaultSize={30}>
-                                                {isMounted && <Terminal />}
-                                            </Panel>
-                                        </PanelGroup>
+                                        <div className="flex-1 flex overflow-hidden">
+                                            {/* File Tree Sidebar - next to code editor */}
+                                            <Sidebar />
+                                            {/* Code Editor and Terminal */}
+                                            <PanelGroup direction="vertical" className="flex-1">
+                                                <Panel defaultSize={70}>
+                                                    {isMounted && <CodeEditor />}
+                                                </Panel>
+                                                <PanelResizeHandle className="h-1 bg-[#1e1e2e] hover:bg-indigo-500/50 transition-colors cursor-row-resize" />
+                                                <Panel defaultSize={30}>
+                                                    {isMounted && <Terminal />}
+                                                </Panel>
+                                            </PanelGroup>
+                                        </div>
                                     </div>
                                 )}
                                 {activeTab === "terminal" && (
