@@ -18,6 +18,7 @@ export function headers() {
 }
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -28,6 +29,11 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
+];
+
+export const meta: Route.MetaFunction = () => [
+  { title: "Forge - AI App Builder" },
+  { name: "description", content: "Build apps with AI. Describe your idea, watch it come to life." },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

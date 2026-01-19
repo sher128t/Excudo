@@ -85,15 +85,6 @@ export function Preview() {
                                     <Copy className="w-4 h-4 text-gray-400" />
                                 )}
                             </button>
-                            <a
-                                href={serverUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 hover:bg-white/5 rounded transition-colors"
-                                title="Open in new tab"
-                            >
-                                <ExternalLink className="w-4 h-4 text-gray-400" />
-                            </a>
                         </>
                     )}
                     {!serverUrl && serverStatus === "idle" && (
@@ -138,8 +129,8 @@ export function Preview() {
                                 <p className="text-sm text-gray-500">{serverStatusMessage}</p>
                                 <div className="mt-4 w-48 h-1 bg-[#1e1e2e] rounded-full mx-auto overflow-hidden">
                                     <div className={`h-full rounded-full animate-pulse ${serverStatus === "installing" ? "bg-yellow-500 w-1/2" :
-                                            serverStatus === "starting" ? "bg-purple-500 w-3/4" :
-                                                "bg-blue-500 w-1/4"
+                                        serverStatus === "starting" ? "bg-purple-500 w-3/4" :
+                                            "bg-blue-500 w-1/4"
                                         }`} />
                                 </div>
                             </>
