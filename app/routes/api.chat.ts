@@ -131,15 +131,22 @@ export async function action({ request }: Route.ActionArgs) {
     thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality
   };
 
-  const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
+  // Max tokens per model - Haiku has a 4096 limit, Sonnet can do more
+  const MAX_TOKENS_MAP = {
+    fast: 4096,
+    thinking: 32000,
+  };
 
-  console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier})`);
+  const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
+  const maxTokens = MAX_TOKENS_MAP[effectiveMode as keyof typeof MAX_TOKENS_MAP];
+
+  console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier}, maxTokens: ${maxTokens})`);
 
   const result = streamText({
     model: anthropic(modelName),
     messages,
     system: SYSTEM_PROMPT,
-    maxTokens: 32000,
+    maxTokens,
     tools: {
       createFile: tool({
         description: "Create a new file with content",
