@@ -54,130 +54,121 @@ postcss.config.js: export default { plugins: { tailwindcss: {}, autoprefixer: {}
 
 Remember: Create intelligent, context-appropriate designs. A fitness app should feel energetic. A law firm should feel professional. A kids app should feel playful. YOU decide the right aesthetic.`;
 
-// Model configuration per tier
-const TIER_MODELS = {
-  free: "claude-3-5-haiku-20241022",      // Cheaper, faster model for free users
-  starter: "claude-sonnet-4-5-20250929",   // Full model for paid users
-  pro: "claude-sonnet-4-5-20250929",
-  teams: "claude-sonnet-4-5-20250929",
-  admin: "claude-sonnet-4-5-20250929",
-};
-
 // Preprocess messages to ensure all tool invocations have results
 // This fixes the "ToolInvocation must have a result" error
 function preprocessMessages(messages: any[]): any[] {
-  return messages.map(message => {
-    // Only process assistant messages with tool invocations
-    if (message.role !== 'assistant' || !message.toolInvocations) {
-      return message;
-    }
+    return messages.map(message => {
+        // Only process assistant messages with tool invocations
+        if (message.role !== 'assistant' || !message.toolInvocations) {
+            return message;
+        }
 
-    // Check if any tool invocations are missing results
-    const hasIncomplete = message.toolInvocations.some(
-      (tool: any) => tool.state === 'call' || !tool.result
-    );
+        // Check if any tool invocations are missing results
+        const hasIncomplete = message.toolInvocations.some(
+            (tool: any) => tool.state === 'call' || !tool.result
+        );
 
-    if (!hasIncomplete) {
-      return message;
-    }
+        if (!hasIncomplete) {
+            return message;
+        }
 
-    // Fix tool invocations by adding results
-    const fixedInvocations = message.toolInvocations.map((tool: any) => {
-      if (tool.state === 'result' && tool.result) {
-        return tool;
-      }
+        // Fix tool invocations by adding results
+        const fixedInvocations = message.toolInvocations.map((tool: any) => {
+            if (tool.state === 'result' && tool.result) {
+                return tool;
+            }
 
-      // Add a synthetic result for incomplete tool calls
-      let result = "Executed successfully";
-      if (tool.toolName === 'createFile' || tool.toolName === 'updateFile') {
-        result = `File ${tool.args?.path || 'unknown'} created successfully`;
-      } else if (tool.toolName === 'deleteFile') {
-        result = `File ${tool.args?.path || 'unknown'} deleted`;
-      } else if (tool.toolName === 'runCommand') {
-        result = `Command executed: ${tool.args?.command || 'unknown'}`;
-      }
+            // Add a synthetic result for incomplete tool calls
+            let result = "Executed successfully";
+            if (tool.toolName === 'createFile' || tool.toolName === 'updateFile') {
+                result = `File ${tool.args?.path || 'unknown'} created successfully`;
+            } else if (tool.toolName === 'deleteFile') {
+                result = `File ${tool.args?.path || 'unknown'} deleted`;
+            } else if (tool.toolName === 'runCommand') {
+                result = `Command executed: ${tool.args?.command || 'unknown'}`;
+            }
 
-      return {
-        ...tool,
-        state: 'result',
-        result,
-      };
+            return {
+                ...tool,
+                state: 'result',
+                result,
+            };
+        });
+
+        return {
+            ...message,
+            toolInvocations: fixedInvocations,
+        };
     });
-
-    return {
-      ...message,
-      toolInvocations: fixedInvocations,
-    };
-  });
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { messages: rawMessages, userTier, modelMode } = await request.json();
+    const { messages: rawMessages, userTier, modelMode } = await request.json();
 
-  // Preprocess messages to fix incomplete tool invocations
-  const messages = preprocessMessages(rawMessages);
+    // Preprocess messages to fix incomplete tool invocations
+    const messages = preprocessMessages(rawMessages);
 
-  // Select model based on modelMode and user tier
-  // If user is free tier and tries to use "thinking", force to "fast"
-  const tier = userTier || "free";
-  const requestedMode = modelMode || "fast";
+    // Select model based on modelMode and user tier
+    // If user is free tier and tries to use "thinking", force to "fast"
+    const tier = userTier || "free";
+    const requestedMode = modelMode || "fast";
 
-  // Free users can only use fast mode
-  const effectiveMode = tier === "free" ? "fast" : requestedMode;
+    // Free users can only use fast mode
+    const effectiveMode = tier === "free" ? "fast" : requestedMode;
 
-  // Model mapping - using correct Anthropic model names
-  // Fast uses Claude 3.5 Sonnet (cheaper, 8k tokens) - enough for basic websites
-  // Thinking uses Claude Sonnet 4.5 (premium, 32k tokens) - best quality for complex projects
-  const MODEL_MAP = {
-    fast: "claude-3-5-sonnet-20241022",      // Claude 3.5 Sonnet - good balance
-    thinking: "claude-sonnet-4-5-20250929",  // Claude Sonnet 4.5 - highest quality
-  };
+    // Model mapping - using correct Anthropic model names
+    // Fast uses Claude 3.5 Sonnet (cheaper, 8k tokens) - enough for basic websites
+    // Thinking uses Claude Sonnet 4.5 (premium, 32k tokens) - best quality for complex projects
+    const MODEL_MAP = {
+        fast: "claude-3-5-sonnet-latest",       // Claude 3.5 Sonnet - good balance, 8k tokens
+        thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality, 32k tokens
+    };
 
-  // Max tokens per model
-  const MAX_TOKENS_MAP = {
-    fast: 8192,     // 3.5 Sonnet can do 8k
-    thinking: 32000, // 4.5 Sonnet can do 32k
-  };
+    // Max tokens per model
+    const MAX_TOKENS_MAP = {
+        fast: 8192,     // 3.5 Sonnet can do 8k
+        thinking: 32000, // 4.5 Sonnet can do 32k
+    };
 
-  const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
-  const maxTokens = MAX_TOKENS_MAP[effectiveMode as keyof typeof MAX_TOKENS_MAP];
+    const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
+    const maxTokens = MAX_TOKENS_MAP[effectiveMode as keyof typeof MAX_TOKENS_MAP];
 
-  console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier}, maxTokens: ${maxTokens})`);
+    console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier}, maxTokens: ${maxTokens})`);
 
-  const result = streamText({
-    model: anthropic(modelName),
-    messages,
-    system: SYSTEM_PROMPT,
-    maxTokens,
-    tools: {
-      createFile: tool({
-        description: "Create a new file with content",
-        parameters: z.object({
-          path: z.string().describe("File path like 'src/components/Hero.jsx'"),
-          content: z.string().describe("Complete file content"),
-        }),
-      }),
-      updateFile: tool({
-        description: "Update an existing file",
-        parameters: z.object({
-          path: z.string(),
-          content: z.string(),
-        }),
-      }),
-      deleteFile: tool({
-        description: "Delete a file",
-        parameters: z.object({
-          path: z.string(),
-        }),
-      }),
-      runCommand: tool({
-        description: "Run a shell command",
-        parameters: z.object({
-          command: z.string(),
-        }),
-      }),
-    },
-  });
+    const result = streamText({
+        model: anthropic(modelName),
+        messages,
+        system: SYSTEM_PROMPT,
+        maxTokens,
+        tools: {
+            createFile: tool({
+                description: "Create a new file with content",
+                parameters: z.object({
+                    path: z.string().describe("File path like 'src/components/Hero.jsx'"),
+                    content: z.string().describe("Complete file content"),
+                }),
+            }),
+            updateFile: tool({
+                description: "Update an existing file",
+                parameters: z.object({
+                    path: z.string(),
+                    content: z.string(),
+                }),
+            }),
+            deleteFile: tool({
+                description: "Delete a file",
+                parameters: z.object({
+                    path: z.string(),
+                }),
+            }),
+            runCommand: tool({
+                description: "Run a shell command",
+                parameters: z.object({
+                    command: z.string(),
+                }),
+            }),
+        },
+    });
 
-  return result.toDataStreamResponse();
+    return result.toDataStreamResponse();
 }
