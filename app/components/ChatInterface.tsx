@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
+import { useAuth } from "~/context/AuthContext";
 import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
@@ -9,6 +10,7 @@ import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 export function ChatInterface() {
     const { writeFile, readFile, runCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
     const { currentProject, saveProject } = useProject();
+    const { profile } = useAuth();
     const processedToolCalls = useRef<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialPromptHandled = useRef(false);
@@ -28,6 +30,9 @@ export function ChatInterface() {
     const chatHelpers = useChat({
         api: "/api/chat",
         maxSteps: 10,
+        body: {
+            userTier: profile?.tier || "free",
+        },
         onError: (error) => {
             console.error("Chat error:", error);
             // Parse error message for user-friendly display
@@ -95,30 +100,52 @@ export function ChatInterface() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // Generate a unique color from a string (deterministic hash)
+    const stringToHsl = (str: string, saturation = 70, lightness = 50): string => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    };
+
     // Generate a thumbnail for the project using canvas
-    const generateThumbnail = useCallback((projectName: string): string => {
+    const generateThumbnail = useCallback((projectName: string, projectDescription?: string): string => {
         const canvas = document.createElement('canvas');
         canvas.width = 400;
         canvas.height = 200;
         const ctx = canvas.getContext('2d');
         if (!ctx) return '';
 
-        // Create gradient background
+        // Generate unique colors based on project name
+        const baseColor = stringToHsl(projectName, 75, 45);
+        const accentColor = stringToHsl(projectName + "_accent", 80, 55);
+
+        // Create gradient background with unique colors
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#4f46e5');  // indigo
-        gradient.addColorStop(1, '#7c3aed');  // purple
+        gradient.addColorStop(0, baseColor);
+        gradient.addColorStop(1, accentColor);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Add project name initials
-        const initials = projectName
-            .split(' ')
+        // Get meaningful initials - try to extract key words from description or name
+        const source = projectDescription || projectName;
+        const words = source
+            .replace(/make\s*(me\s*)?(a\s*)?/gi, '')  // Remove "make me a"
+            .replace(/website\s*(for\s*)?(a\s*)?/gi, '')  // Remove "website for a"
+            .replace(/app\s*(for\s*)?(a\s*)?/gi, '')  // Remove "app for a"
+            .replace(/an?\s+/gi, '')  // Remove "a" and "an"
+            .split(/\s+/)
+            .filter(word => word.length > 2);
+
+        const initials = words
+            .slice(0, 2)
             .map(word => word[0])
             .join('')
-            .toUpperCase()
-            .slice(0, 2);
+            .toUpperCase() || projectName.slice(0, 2).toUpperCase();
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
         ctx.font = 'bold 80px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -166,7 +193,7 @@ export function ChatInterface() {
             };
 
             // Generate thumbnail if not already set
-            const thumbnail = currentProject.thumbnail || generateThumbnail(currentProject.name);
+            const thumbnail = currentProject.thumbnail || generateThumbnail(currentProject.name, currentProject.description);
 
             saveProject({ files: mergedFiles, thumbnail });
         }, 1500);

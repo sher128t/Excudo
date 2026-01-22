@@ -54,6 +54,15 @@ postcss.config.js: export default { plugins: { tailwindcss: {}, autoprefixer: {}
 
 Remember: Create intelligent, context-appropriate designs. A fitness app should feel energetic. A law firm should feel professional. A kids app should feel playful. YOU decide the right aesthetic.`;
 
+// Model configuration per tier
+const TIER_MODELS = {
+  free: "claude-3-5-haiku-20241022",      // Cheaper, faster model for free users
+  starter: "claude-sonnet-4-5-20250929",   // Full model for paid users
+  pro: "claude-sonnet-4-5-20250929",
+  teams: "claude-sonnet-4-5-20250929",
+  admin: "claude-sonnet-4-5-20250929",
+};
+
 // Preprocess messages to ensure all tool invocations have results
 // This fixes the "ToolInvocation must have a result" error
 function preprocessMessages(messages: any[]): any[] {
@@ -103,13 +112,19 @@ function preprocessMessages(messages: any[]): any[] {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { messages: rawMessages } = await request.json();
+  const { messages: rawMessages, userTier } = await request.json();
 
   // Preprocess messages to fix incomplete tool invocations
   const messages = preprocessMessages(rawMessages);
 
+  // Select model based on user tier (default to free/cheaper model)
+  const tier = userTier || "free";
+  const modelName = TIER_MODELS[tier as keyof typeof TIER_MODELS] || TIER_MODELS.free;
+
+  console.log(`Using model: ${modelName} for tier: ${tier}`);
+
   const result = streamText({
-    model: anthropic("claude-sonnet-4-5-20250929"),
+    model: anthropic(modelName),
     messages,
     system: SYSTEM_PROMPT,
     maxTokens: 32000,
