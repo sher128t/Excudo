@@ -112,16 +112,28 @@ function preprocessMessages(messages: any[]): any[] {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { messages: rawMessages, userTier } = await request.json();
+  const { messages: rawMessages, userTier, modelMode } = await request.json();
 
   // Preprocess messages to fix incomplete tool invocations
   const messages = preprocessMessages(rawMessages);
 
-  // Select model based on user tier (default to free/cheaper model)
+  // Select model based on modelMode and user tier
+  // If user is free tier and tries to use "thinking", force to "fast"
   const tier = userTier || "free";
-  const modelName = TIER_MODELS[tier as keyof typeof TIER_MODELS] || TIER_MODELS.free;
+  const requestedMode = modelMode || "fast";
 
-  console.log(`Using model: ${modelName} for tier: ${tier}`);
+  // Free users can only use fast mode
+  const effectiveMode = tier === "free" ? "fast" : requestedMode;
+
+  // Model mapping
+  const MODEL_MAP = {
+    fast: "claude-3-5-haiku-20241022",
+    thinking: "claude-sonnet-4-5-20250929",
+  };
+
+  const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
+
+  console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier})`);
 
   const result = streamText({
     model: anthropic(modelName),

@@ -1,11 +1,13 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
 import { useAuth } from "~/context/AuthContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw, Zap, Crown } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
+
+export type ModelMode = "fast" | "thinking";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
@@ -20,6 +22,13 @@ export function ChatInterface() {
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
+    // Model mode state
+    const [modelMode, setModelMode] = useState<ModelMode>("fast");
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    // Check if user can use thinking mode
+    const canUseThinking = profile?.tier !== "free";
+
     // Error handling state
     const [error, setError] = useState<{ message: string; retryContent?: string } | null>(null);
     const lastMessageRef = useRef<string>("");
@@ -27,12 +36,16 @@ export function ChatInterface() {
     // Track files for saving to project
     const projectFilesRef = useRef<Record<string, string>>({});
 
+    // Dynamic body for API request - include selected model mode
+    const chatBody = useMemo(() => ({
+        userTier: profile?.tier || "free",
+        modelMode: modelMode,
+    }), [profile?.tier, modelMode]);
+
     const chatHelpers = useChat({
         api: "/api/chat",
         maxSteps: 10,
-        body: {
-            userTier: profile?.tier || "free",
-        },
+        body: chatBody,
         onError: (error) => {
             console.error("Chat error:", error);
             // Parse error message for user-friendly display
@@ -534,6 +547,48 @@ export function ChatInterface() {
                         ))}
                     </div>
                 )}
+
+                {/* Model Selector */}
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-gray-500">Mode:</span>
+                    <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
+                        <button
+                            type="button"
+                            onClick={() => setModelMode("fast")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
+                                ? "bg-amber-500/20 text-amber-400"
+                                : "text-gray-400 hover:text-white"
+                                }`}
+                        >
+                            <Zap className="w-3 h-3" />
+                            Fast
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (canUseThinking) {
+                                    setModelMode("thinking");
+                                } else {
+                                    setShowUpgradeModal(true);
+                                }
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
+                                ? "bg-purple-500/20 text-purple-400"
+                                : "text-gray-400 hover:text-white"
+                                }`}
+                        >
+                            <Crown className="w-3 h-3" />
+                            Thinking
+                            {!canUseThinking && (
+                                <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full ml-1">PRO</span>
+                            )}
+                        </button>
+                    </div>
+                    <span className="text-[10px] text-gray-500 ml-2">
+                        {modelMode === "fast" ? "Faster responses, good for simple tasks" : "Better quality, more thorough"}
+                    </span>
+                </div>
+
                 <div className="flex gap-2 items-center">
                     <button
                         type="button"
@@ -571,6 +626,58 @@ export function ChatInterface() {
                     )}
                 </div>
             </form>
+
+            {/* Upgrade Modal */}
+            {showUpgradeModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <Crown className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Upgrade to Pro</h3>
+                                <p className="text-sm text-gray-400">Unlock Thinking mode</p>
+                            </div>
+                        </div>
+                        <p className="text-gray-300 mb-4">
+                            <strong>Thinking mode</strong> uses our most advanced AI model for:
+                        </p>
+                        <ul className="text-sm text-gray-400 space-y-2 mb-6">
+                            <li className="flex items-center gap-2">
+                                <Check className="w-4 h-4 text-green-400" />
+                                Higher quality code generation
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="w-4 h-4 text-green-400" />
+                                More reliable file creation
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Check className="w-4 h-4 text-green-400" />
+                                Better understanding of complex requests
+                            </li>
+                        </ul>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition-colors"
+                            >
+                                Maybe later
+                            </button>
+                            <button
+                                onClick={() => {
+                                    // TODO: Implement Stripe checkout
+                                    setShowUpgradeModal(false);
+                                    alert("Stripe integration coming soon!");
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-colors"
+                            >
+                                Upgrade Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* File Attach Modal */}
             <FileAttachModal
