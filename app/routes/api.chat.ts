@@ -120,7 +120,7 @@ export async function action({ request }: Route.ActionArgs) {
     // Fast uses Claude Haiku 4.5 (cheaper, faster) - good for basic websites
     // Thinking uses Claude Sonnet 4.5 (premium, 32k tokens) - best quality for complex projects
     const MODEL_MAP = {
-        fast: "claude-haiku-4-5-20250929",    // Claude Haiku 4.5 - fast and affordable
+        fast: "claude-haiku-4-5-20251001",    // Claude Haiku 4.5 - fast and affordable
         thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality
     };
 
