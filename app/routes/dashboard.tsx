@@ -6,10 +6,12 @@ import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
     Hammer, Home, Search, FolderOpen, Clock, Star, Users, Compass,
     BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2, MoreHorizontal,
-    Trash2, Pencil, ExternalLink, AlertCircle
+    Trash2, Pencil, ExternalLink, AlertCircle, Crown
 } from "lucide-react";
 import { CreditsDisplay } from "~/components/CreditsDisplay";
 import { UserMenu } from "~/components/UserMenu";
+
+export type ModelMode = "fast" | "thinking";
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading } = useAuth();
@@ -19,6 +21,11 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<"recent" | "projects" | "templates">("recent");
     const [creatingProject, setCreatingProject] = useState(false);
     const [limitError, setLimitError] = useState("");
+    const [modelMode, setModelMode] = useState<ModelMode>("fast");
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    // Check if user can use thinking mode
+    const canUseThinking = profile?.tier !== "free";
 
     // Check if user can create more projects
     const canCreate = profile ? canCreateProject(profile, projects.length) : true;
@@ -49,9 +56,10 @@ export default function Dashboard() {
             const project = await createNewProject(projectName);
 
             if (project) {
-                // Store prompt and project ID for editor
+                // Store prompt, project ID, and model mode for editor
                 sessionStorage.setItem("initialPrompt", prompt);
                 sessionStorage.setItem("currentProjectId", project.id);
+                sessionStorage.setItem("initialModelMode", modelMode);
                 navigate("/editor");
             }
         } catch (err) {
@@ -185,6 +193,44 @@ export default function Dashboard() {
                                 {!canCreate && (
                                     <span className="text-xs text-yellow-500">Upgrade for more</span>
                                 )}
+                            </div>
+
+                            {/* Model Selector */}
+                            <div className="flex items-center justify-center gap-2 mt-3">
+                                <span className="text-xs text-gray-500">Mode:</span>
+                                <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setModelMode("fast")}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
+                                                ? "bg-amber-500/20 text-amber-400"
+                                                : "text-gray-400 hover:text-white"
+                                            }`}
+                                    >
+                                        <Zap className="w-3 h-3" />
+                                        Fast
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (canUseThinking) {
+                                                setModelMode("thinking");
+                                            } else {
+                                                setShowUpgradeModal(true);
+                                            }
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
+                                                ? "bg-purple-500/20 text-purple-400"
+                                                : "text-gray-400 hover:text-white"
+                                            }`}
+                                    >
+                                        <Crown className="w-3 h-3" />
+                                        Thinking
+                                        {!canUseThinking && (
+                                            <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full ml-1">PRO</span>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </form>
 

@@ -365,6 +365,13 @@ export function ChatInterface() {
             sessionStorage.setItem("isNewProject", "true");
             sessionStorage.removeItem("initialPrompt");
 
+            // Read initial model mode from dashboard selection
+            const initialModelMode = sessionStorage.getItem("initialModelMode");
+            if (initialModelMode === "fast" || initialModelMode === "thinking") {
+                setModelMode(initialModelMode);
+            }
+            sessionStorage.removeItem("initialModelMode");
+
             // Reset WebContainer before starting new project
             resetContainer().then(() => {
                 // Clear tracked files and refs for new project
