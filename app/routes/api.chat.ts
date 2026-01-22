@@ -125,10 +125,10 @@ export async function action({ request }: Route.ActionArgs) {
   // Free users can only use fast mode
   const effectiveMode = tier === "free" ? "fast" : requestedMode;
 
-  // Model mapping
+  // Model mapping - using correct Anthropic model names
   const MODEL_MAP = {
-    fast: "claude-3-5-haiku-20241022",
-    thinking: "claude-sonnet-4-5-20250929",
+    fast: "claude-3-haiku-20240307",      // Claude 3 Haiku - fastest and cheapest
+    thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality
   };
 
   const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
