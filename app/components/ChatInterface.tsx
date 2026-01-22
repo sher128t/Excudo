@@ -69,12 +69,39 @@ export function ChatInterface() {
 
     const { messages, input, handleInputChange, handleSubmit: originalHandleSubmit, isLoading, setMessages, setInput, append, stop } = chatHelpers;
 
-    // Wrap handleSubmit to track last message
+    // Wrap handleSubmit to track last message and include images
     const handleSubmit = useCallback((e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() && attachedFiles.length === 0) return;
+
         lastMessageRef.current = input;
         setError(null);
-        originalHandleSubmit(e);
-    }, [input, originalHandleSubmit]);
+
+        // If there are attached images, use append with multimodal content
+        if (attachedFiles.length > 0) {
+            const content: Array<{ type: "text"; text: string } | { type: "image"; image: string }> = [];
+
+            // Add text if present
+            if (input.trim()) {
+                content.push({ type: "text", text: input });
+            }
+
+            // Add images
+            for (const file of attachedFiles) {
+                content.push({ type: "image", image: file.dataUrl });
+            }
+
+            // Send with multimodal content (type assertion needed - runtime supports it)
+            append({ role: "user", content: content as unknown as string });
+
+            // Clear input and attachments
+            setInput("");
+            setAttachedFiles([]);
+        } else {
+            // No images, use standard submit
+            originalHandleSubmit(e);
+        }
+    }, [input, originalHandleSubmit, attachedFiles, append, setInput]);
 
     // Retry function
     const handleRetry = useCallback(() => {
