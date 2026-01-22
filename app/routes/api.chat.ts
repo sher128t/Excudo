@@ -117,17 +117,17 @@ export async function action({ request }: Route.ActionArgs) {
     const effectiveMode = tier === "free" ? "fast" : requestedMode;
 
     // Model mapping - using correct Anthropic model names
-    // Fast uses Claude 3.5 Sonnet (cheaper, 8k tokens) - enough for basic websites
+    // Fast uses Claude Haiku 4.5 (cheaper, faster) - good for basic websites
     // Thinking uses Claude Sonnet 4.5 (premium, 32k tokens) - best quality for complex projects
     const MODEL_MAP = {
-        fast: "claude-3-5-sonnet-latest",       // Claude 3.5 Sonnet - good balance, 8k tokens
-        thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality, 32k tokens
+        fast: "claude-haiku-4-5-20250929",    // Claude Haiku 4.5 - fast and affordable
+        thinking: "claude-sonnet-4-5-20250929", // Claude Sonnet 4.5 - highest quality
     };
 
-    // Max tokens per model
+    // Max tokens per model - both 4.5 models support high token counts
     const MAX_TOKENS_MAP = {
-        fast: 8192,     // 3.5 Sonnet can do 8k
-        thinking: 32000, // 4.5 Sonnet can do 32k
+        fast: 16000,     // Haiku 4.5 - good balance
+        thinking: 32000, // Sonnet 4.5 - max for complex projects
     };
 
     const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
