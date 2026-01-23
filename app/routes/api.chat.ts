@@ -126,7 +126,7 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Max tokens per model - both 4.5 models support high token counts
     const MAX_TOKENS_MAP = {
-        fast: 16000,     // Haiku 4.5 - good balance
+        fast: 32000,     // Haiku 4.5 - max tokens for complete projects
         thinking: 32000, // Sonnet 4.5 - max for complex projects
     };
 
