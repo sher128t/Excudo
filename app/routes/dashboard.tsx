@@ -6,12 +6,25 @@ import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
     Hammer, Home, Search, FolderOpen, Clock, Star, Users, Compass,
     BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2, MoreHorizontal,
-    Trash2, Pencil, ExternalLink, AlertCircle, Crown
+    Trash2, Pencil, ExternalLink, AlertCircle, Crown, Paperclip, X
 } from "lucide-react";
 import { CreditsDisplay } from "~/components/CreditsDisplay";
 import { UserMenu } from "~/components/UserMenu";
+import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
 
 export type ModelMode = "fast" | "thinking";
+
+// Typing animation prompts
+const TYPING_PROMPTS = [
+    "a landing page for my startup",
+    "a portfolio website",
+    "a SaaS dashboard",
+    "a restaurant website",
+    "an e-commerce store",
+    "a mobile app UI",
+    "a blog platform",
+    "a fitness tracker app",
+];
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading } = useAuth();
@@ -24,12 +37,50 @@ export default function Dashboard() {
     const [modelMode, setModelMode] = useState<ModelMode>("fast");
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+    // Attachment state
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    const [showAttachModal, setShowAttachModal] = useState(false);
+
+    // Typing animation state
+    const [typingText, setTypingText] = useState("");
+    const [promptIndex, setPromptIndex] = useState(0);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Check if user can use thinking mode
     const canUseThinking = profile?.tier !== "free";
 
     // Check if user can create more projects
     const canCreate = profile ? canCreateProject(profile, projects.length) : true;
     const projectLimit = profile ? getProjectLimit(profile) : 3;
+
+    // Typing animation effect
+    useEffect(() => {
+        const currentPrompt = TYPING_PROMPTS[promptIndex];
+        const typingSpeed = isDeleting ? 30 : 80;
+
+        const timeout = setTimeout(() => {
+            if (!isDeleting) {
+                if (typingText.length < currentPrompt.length) {
+                    setTypingText(currentPrompt.slice(0, typingText.length + 1));
+                } else {
+                    // Pause before deleting
+                    setTimeout(() => setIsDeleting(true), 2000);
+                }
+            } else {
+                if (typingText.length > 0) {
+                    setTypingText(typingText.slice(0, -1));
+                } else {
+                    setIsDeleting(false);
+                    setPromptIndex((prev) => (prev + 1) % TYPING_PROMPTS.length);
+                }
+            }
+        }, typingSpeed);
+
+        return () => clearTimeout(timeout);
+    }, [typingText, isDeleting, promptIndex]);
+
+    // Get user's display name
+    const userName = profile?.full_name || profile?.email?.split("@")[0] || user?.email?.split("@")[0] || "there";
 
     // Redirect to landing if not authenticated
     useEffect(() => {
@@ -156,19 +207,52 @@ export default function Dashboard() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-gradient-to-r from-indigo-600/20 to-purple-600/20 blur-3xl rounded-full" />
 
                     <div className="relative z-10 w-full max-w-2xl text-center">
-                        <h1 className="text-4xl font-bold mb-8">
-                            Let's build something, <span className="text-indigo-400">{profile?.email?.split("@")[0] || user.email?.split("@")[0] || "Builder"}</span>
+                        <h1 className="text-4xl font-bold mb-2">
+                            What should we build today,
                         </h1>
+                        <h2 className="text-3xl font-bold mb-8">
+                            <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{userName}</span>?
+                        </h2>
+
+                        {/* Attached Images Preview */}
+                        {attachedFiles.length > 0 && (
+                            <div className="flex gap-2 mb-4 justify-center flex-wrap">
+                                {attachedFiles.map((file) => (
+                                    <div key={file.id} className="relative group">
+                                        <img
+                                            src={file.dataUrl}
+                                            alt={file.name}
+                                            className="w-16 h-16 object-cover rounded-lg border border-[#1e1e2e]"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setAttachedFiles(prev => prev.filter(f => f.id !== file.id))}
+                                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Prompt Input */}
                         <form onSubmit={handleStartProject} className="relative">
                             <div className={`bg-[#12121a] border rounded-2xl p-2 flex items-center gap-2 ${limitError ? 'border-red-500/50' : 'border-[#1e1e2e]'}`}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAttachModal(true)}
+                                    className={`p-2 rounded-lg transition-colors ${attachedFiles.length > 0 ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                    title="Attach images"
+                                >
+                                    <Paperclip className="w-5 h-5" />
+                                </button>
                                 <input
                                     type="text"
                                     value={prompt}
                                     onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
-                                    placeholder="Ask Forge to create a dashboard for..."
-                                    className="flex-1 bg-transparent px-4 py-3 text-white placeholder-gray-500 focus:outline-none"
+                                    placeholder={`Ask Forge to create ${typingText}${!isDeleting ? '|' : ''}`}
+                                    className="flex-1 bg-transparent px-2 py-3 text-white placeholder-gray-500 focus:outline-none"
                                     disabled={creatingProject || !canCreate}
                                 />
                                 <div className="flex items-center gap-2 pr-2">
@@ -203,8 +287,8 @@ export default function Dashboard() {
                                         type="button"
                                         onClick={() => setModelMode("fast")}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
-                                                ? "bg-amber-500/20 text-amber-400"
-                                                : "text-gray-400 hover:text-white"
+                                            ? "bg-amber-500/20 text-amber-400"
+                                            : "text-gray-400 hover:text-white"
                                             }`}
                                     >
                                         <Zap className="w-3 h-3" />
@@ -220,8 +304,8 @@ export default function Dashboard() {
                                             }
                                         }}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
-                                                ? "bg-purple-500/20 text-purple-400"
-                                                : "text-gray-400 hover:text-white"
+                                            ? "bg-purple-500/20 text-purple-400"
+                                            : "text-gray-400 hover:text-white"
                                             }`}
                                     >
                                         <Crown className="w-3 h-3" />
@@ -286,7 +370,7 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Project Grid */}
+                        {/* Project Cards - Horizontal Scroll */}
                         {projectsLoading ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
@@ -297,20 +381,30 @@ export default function Dashboard() {
                                 <p>No projects yet. Start building something amazing!</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {projects.slice(0, 8).map((project) => (
-                                    <ProjectCard
-                                        key={project.id}
-                                        project={project}
-                                        onOpen={() => handleOpenProject(project.id)}
-                                        onDelete={() => deleteProjectById(project.id)}
-                                    />
-                                ))}
+                            <div className="overflow-x-auto pb-4 -mx-4 px-4">
+                                <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+                                    {projects.map((project) => (
+                                        <div key={project.id} className="w-64 flex-shrink-0">
+                                            <ProjectCard
+                                                project={project}
+                                                onOpen={() => handleOpenProject(project.id)}
+                                                onDelete={() => deleteProjectById(project.id)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             </main>
+
+            {/* File Attach Modal */}
+            <FileAttachModal
+                isOpen={showAttachModal}
+                onClose={() => setShowAttachModal(false)}
+                onAttach={(files) => setAttachedFiles(prev => [...prev, ...files])}
+            />
         </div>
     );
 }

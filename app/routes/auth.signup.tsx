@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "~/context/AuthContext";
-import { Hammer, Mail, Lock, ArrowRight, Loader2, Check } from "lucide-react";
+import { Hammer, Mail, Lock, ArrowRight, Loader2, Check, User } from "lucide-react";
 
 export default function Signup() {
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -31,7 +32,7 @@ export default function Signup() {
         }
 
         try {
-            const result = await signUp(email, password);
+            const result = await signUp(email, password, name);
 
             if (result.error) {
                 setError(result.error);
@@ -96,6 +97,21 @@ export default function Signup() {
                             {error}
                         </div>
                     )}
+
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1.5">Your name</label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                                className="w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50"
+                                placeholder="John Doe"
+                            />
+                        </div>
+                    </div>
 
                     <div>
                         <label className="block text-sm text-gray-400 mb-1.5">Email</label>

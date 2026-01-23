@@ -9,7 +9,7 @@ interface AuthContextType {
     session: Session | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<{ error?: string }>;
-    signUp: (email: string, password: string) => Promise<{ error?: string }>;
+    signUp: (email: string, password: string, fullName?: string) => Promise<{ error?: string }>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
 }
@@ -164,12 +164,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const signUp = async (email: string, password: string) => {
+    const signUp = async (email: string, password: string, fullName?: string) => {
         if (!supabase) return { error: "Auth not configured" };
 
         try {
-            const { error } = await supabase.auth.signUp({ email, password });
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName || email.split("@")[0],
+                    }
+                }
+            });
             if (error) return { error: error.message };
+
+            // Update profile with full_name if user was created
+            if (data.user && fullName) {
+                await supabase
+                    .from("profiles")
+                    .update({ full_name: fullName })
+                    .eq("id", data.user.id);
+            }
+
             return {};
         } catch (err) {
             return { error: "Sign up failed" };

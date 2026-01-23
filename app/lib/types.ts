@@ -2,6 +2,7 @@
 export interface Profile {
     id: string;
     email: string;
+    full_name?: string;  // User's display name
     tier: "free" | "starter" | "pro" | "teams" | "admin";
     credits_used_today: number;
     credits_limit: number;
