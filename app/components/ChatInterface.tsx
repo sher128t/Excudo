@@ -502,7 +502,25 @@ export function ChatInterface() {
                                 )}
                                 {/* Message content */}
                                 {message.content && (
-                                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                                    <div className="text-sm whitespace-pre-wrap">
+                                        {typeof message.content === "string"
+                                            ? message.content
+                                            : Array.isArray(message.content)
+                                                ? (message.content as any[]).map((part: any, i: number) => (
+                                                    <span key={i}>
+                                                        {part.type === "text" && part.text}
+                                                        {part.type === "image" && (
+                                                            <img
+                                                                src={part.image}
+                                                                alt="Attached"
+                                                                className="max-w-xs rounded-lg mt-2 border border-[#1e1e2e]"
+                                                            />
+                                                        )}
+                                                    </span>
+                                                ))
+                                                : null
+                                        }
+                                    </div>
                                 )}
                             </div>
                             {message.role === "user" && (
