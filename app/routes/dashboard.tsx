@@ -30,7 +30,17 @@ export default function Dashboard() {
     const [prompt, setPrompt] = useState("");
     const [creatingProject, setCreatingProject] = useState(false);
     const [limitError, setLimitError] = useState("");
-    const [modelMode, setModelMode] = useState<ModelMode>("plan");
+
+    // Default mode based on tier: thinking for paid, fast for free
+    const canUseThinking = profile?.tier !== "free" && profile?.tier !== undefined;
+    const [modelMode, setModelMode] = useState<ModelMode>("fast");
+
+    // Update default mode when profile loads
+    useEffect(() => {
+        if (profile) {
+            setModelMode(profile.tier === "free" ? "fast" : "thinking");
+        }
+    }, [profile]);
 
     // Attachment state
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -40,9 +50,6 @@ export default function Dashboard() {
     const [typingText, setTypingText] = useState("");
     const [promptIndex, setPromptIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    // Check if user can use thinking mode
-    const canUseThinking = profile?.tier !== "free";
 
     // Check if user can create more projects
     const canCreate = profile ? canCreateProject(profile, projects.length) : true;

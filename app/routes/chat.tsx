@@ -21,7 +21,7 @@ export default function Chat() {
     const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
         api: "/api/chat",
         body: {
-            mode: "plan",  // Planning mode - no code generation
+            modelMode: "plan",  // Planning mode - no code generation
         },
     });
 
@@ -107,8 +107,8 @@ export default function Chat() {
                             )}
                             <div
                                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
-                                        ? "bg-indigo-600 text-white"
-                                        : "bg-white/5 text-gray-200 border border-white/5"
+                                    ? "bg-indigo-600 text-white"
+                                    : "bg-white/5 text-gray-200 border border-white/5"
                                     }`}
                             >
                                 <div className="text-sm whitespace-pre-wrap">
