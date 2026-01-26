@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
 import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
-    Hammer, Home, Search, FolderOpen, Clock, Star, Users, Compass,
-    BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2, MoreHorizontal,
-    Trash2, Pencil, ExternalLink, AlertCircle, Crown, Paperclip, X
+    Hammer, Home, Search, FolderOpen, Clock, Star, Compass,
+    BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2,
+    AlertCircle, Paperclip, X, ChevronRight, Layout, Share2
 } from "lucide-react";
-import { CreditsDisplay } from "~/components/CreditsDisplay";
 import { UserMenu } from "~/components/UserMenu";
 import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
 
@@ -16,26 +15,22 @@ export type ModelMode = "fast" | "thinking";
 
 // Typing animation prompts
 const TYPING_PROMPTS = [
+    "an internal tool that...",
     "a landing page for my startup",
     "a portfolio website",
     "a SaaS dashboard",
-    "a restaurant website",
     "an e-commerce store",
     "a mobile app UI",
-    "a blog platform",
-    "a fitness tracker app",
 ];
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading } = useAuth();
-    const { projects, loading: projectsLoading, createNewProject, deleteProjectById } = useProject();
+    const { projects, loading: projectsLoading, createNewProject } = useProject();
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState("");
-    const [activeTab, setActiveTab] = useState<"recent" | "projects" | "templates">("recent");
     const [creatingProject, setCreatingProject] = useState(false);
     const [limitError, setLimitError] = useState("");
     const [modelMode, setModelMode] = useState<ModelMode>("fast");
-    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Attachment state
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -63,7 +58,6 @@ export default function Dashboard() {
                 if (typingText.length < currentPrompt.length) {
                     setTypingText(currentPrompt.slice(0, typingText.length + 1));
                 } else {
-                    // Pause before deleting
                     setTimeout(() => setIsDeleting(true), 2000);
                 }
             } else {
@@ -93,7 +87,6 @@ export default function Dashboard() {
         e.preventDefault();
         if (!prompt.trim() || !user) return;
 
-        // Check project limit
         if (!canCreate) {
             setLimitError(`You've reached your limit of ${projectLimit} projects. Upgrade to create more!`);
             return;
@@ -102,32 +95,13 @@ export default function Dashboard() {
 
         setCreatingProject(true);
         try {
-            // Create new project with the prompt as name
             const projectName = prompt.slice(0, 50) + (prompt.length > 50 ? "..." : "");
             const project = await createNewProject(projectName);
 
             if (project) {
-                // Store prompt, project ID, and model mode for editor
                 sessionStorage.setItem("initialPrompt", prompt);
                 sessionStorage.setItem("currentProjectId", project.id);
                 sessionStorage.setItem("initialModelMode", modelMode);
-                navigate("/editor");
-            }
-        } catch (err) {
-            console.error("Failed to create project:", err);
-        } finally {
-            setCreatingProject(false);
-        }
-    };
-
-    const handleBlankProject = async () => {
-        if (!user) return;
-
-        setCreatingProject(true);
-        try {
-            const project = await createNewProject("Untitled Project");
-            if (project) {
-                sessionStorage.setItem("currentProjectId", project.id);
                 navigate("/editor");
             }
         } catch (err) {
@@ -153,248 +127,266 @@ export default function Dashboard() {
     if (!user) return null;
 
     return (
-        <div className="h-screen w-screen bg-[#0a0a0f] text-white flex">
-            {/* Sidebar */}
-            <aside className="w-64 bg-[#0a0a0f] border-r border-[#1e1e2e] flex flex-col">
+        <div className="h-screen w-screen bg-[#0a0a0f] text-white flex overflow-hidden">
+            {/* Minimal Sidebar */}
+            <aside className="w-56 bg-[#0a0a0f]/80 backdrop-blur-xl border-r border-white/5 flex flex-col">
                 {/* Logo */}
-                <div className="p-4 border-b border-[#1e1e2e]">
+                <div className="p-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Hammer className="w-5 h-5 text-white" />
+                        <div className="w-7 h-7 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
+                            <Hammer className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                            Forge
-                        </span>
+                        <span className="font-semibold text-white">Forge</span>
                     </div>
                 </div>
 
+                {/* My Workspace Dropdown */}
+                <div className="px-3 mb-2">
+                    <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                        <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-orange-500 rounded flex items-center justify-center text-xs font-bold">
+                            {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium truncate flex-1 text-left">{userName}'s workspace</span>
+                        <ChevronRight className="w-4 h-4 text-gray-500 rotate-90" />
+                    </button>
+                </div>
+
                 {/* Navigation */}
-                <nav className="flex-1 p-3 space-y-1">
-                    <SidebarItem icon={Home} label="Home" active />
-                    <SidebarItem icon={Search} label="Search" />
+                <nav className="flex-1 px-3 space-y-1">
+                    <NavItem icon={Home} label="Home" active />
+                    <NavItem icon={Search} label="Search" />
 
                     <div className="pt-4 pb-2">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider px-3">Projects</p>
+                        <p className="text-[11px] text-gray-500 uppercase tracking-wider px-3 font-medium">Projects</p>
                     </div>
-                    <SidebarItem icon={Clock} label="Recent" badge={projects.length} />
-                    <SidebarItem icon={FolderOpen} label="All projects" />
-                    <SidebarItem icon={Star} label="Starred" />
-                    <SidebarItem icon={Users} label="Shared with me" />
+                    <NavItem icon={Clock} label="Recent" />
+                    <NavItem icon={FolderOpen} label="All projects" href="/projects" />
+                    <NavItem icon={Star} label="Starred" />
+                    <NavItem icon={Share2} label="Shared with me" />
 
                     <div className="pt-4 pb-2">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider px-3">Resources</p>
+                        <p className="text-[11px] text-gray-500 uppercase tracking-wider px-3 font-medium">Resources</p>
                     </div>
-                    <SidebarItem icon={Compass} label="Discover" />
-                    <SidebarItem icon={BookOpen} label="Templates" />
+                    <NavItem icon={Compass} label="Discover" />
+                    <NavItem icon={Layout} label="Templates" />
+                    <NavItem icon={BookOpen} label="Learn" />
                 </nav>
 
                 {/* Bottom */}
-                <div className="p-4 border-t border-[#1e1e2e] space-y-3">
-                    <CreditsDisplay />
-                    <div className="flex items-center gap-2">
+                <div className="p-3 space-y-2">
+                    <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm">
+                        <Share2 className="w-4 h-4" />
+                        <span>Share Forge</span>
+                        <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">3 credits</span>
+                    </button>
+                    <Link
+                        to="/pricing"
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 hover:border-indigo-500/50 transition-colors text-sm"
+                    >
+                        <Zap className="w-4 h-4 text-indigo-400" />
+                        <span className="text-indigo-300">Upgrade to Pro</span>
+                    </Link>
+                    <div className="flex items-center gap-2 px-1 pt-2">
                         <UserMenu />
-                        <span className="text-sm text-gray-400 truncate">{user.email}</span>
+                        <span className="text-xs text-gray-500 truncate">{user.email}</span>
                     </div>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-                {/* Hero Area */}
-                <div className="relative flex-1 flex flex-col items-center justify-center p-8 overflow-hidden">
-                    {/* Gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 via-purple-900/10 to-transparent" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-gradient-to-r from-indigo-600/20 to-purple-600/20 blur-3xl rounded-full" />
-
-                    <div className="relative z-10 w-full max-w-2xl text-center">
-                        <h1 className="text-4xl font-bold mb-2">
-                            What should we build today,
-                        </h1>
-                        <h2 className="text-3xl font-bold mb-8">
-                            <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{userName}</span>?
-                        </h2>
-
-                        {/* Attached Images Preview */}
-                        {attachedFiles.length > 0 && (
-                            <div className="flex gap-2 mb-4 justify-center flex-wrap">
-                                {attachedFiles.map((file) => (
-                                    <div key={file.id} className="relative group">
-                                        <img
-                                            src={file.dataUrl}
-                                            alt={file.name}
-                                            className="w-16 h-16 object-cover rounded-lg border border-[#1e1e2e]"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setAttachedFiles(prev => prev.filter(f => f.id !== file.id))}
-                                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Prompt Input */}
-                        <form onSubmit={handleStartProject} className="relative">
-                            <div className={`bg-[#12121a] border rounded-2xl p-2 flex items-center gap-2 ${limitError ? 'border-red-500/50' : 'border-[#1e1e2e]'}`}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAttachModal(true)}
-                                    className={`p-2 rounded-lg transition-colors ${attachedFiles.length > 0 ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                                    title="Attach images"
-                                >
-                                    <Paperclip className="w-5 h-5" />
-                                </button>
-                                <input
-                                    type="text"
-                                    value={prompt}
-                                    onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
-                                    placeholder={`Ask Forge to create ${typingText}${!isDeleting ? '|' : ''}`}
-                                    className="flex-1 bg-transparent px-2 py-3 text-white placeholder-gray-500 focus:outline-none"
-                                    disabled={creatingProject || !canCreate}
-                                />
-                                <div className="flex items-center gap-2 pr-2">
-                                    <button
-                                        type="submit"
-                                        disabled={!prompt.trim() || creatingProject || !canCreate}
-                                        className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg disabled:opacity-50"
-                                    >
-                                        {creatingProject ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <ArrowRight className="w-5 h-5" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                            {/* Project count and limit */}
-                            <div className="flex items-center justify-between mt-2 px-2">
-                                <span className="text-xs text-gray-500">
-                                    {projects.length}/{projectLimit} projects used
-                                </span>
-                                {!canCreate && (
-                                    <span className="text-xs text-yellow-500">Upgrade for more</span>
-                                )}
-                            </div>
-
-                            {/* Model Selector */}
-                            <div className="flex items-center justify-center gap-2 mt-3">
-                                <span className="text-xs text-gray-500">Mode:</span>
-                                <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
-                                    <button
-                                        type="button"
-                                        onClick={() => setModelMode("fast")}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
-                                            ? "bg-amber-500/20 text-amber-400"
-                                            : "text-gray-400 hover:text-white"
-                                            }`}
-                                    >
-                                        <Zap className="w-3 h-3" />
-                                        Fast
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (canUseThinking) {
-                                                setModelMode("thinking");
-                                            } else {
-                                                setShowUpgradeModal(true);
-                                            }
-                                        }}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
-                                            ? "bg-purple-500/20 text-purple-400"
-                                            : "text-gray-400 hover:text-white"
-                                            }`}
-                                    >
-                                        <Crown className="w-3 h-3" />
-                                        Thinking
-                                        {!canUseThinking && (
-                                            <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full ml-1">PRO</span>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                        {/* Limit Error */}
-                        {limitError && (
-                            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                                <p className="text-sm text-red-400">{limitError}</p>
-                            </div>
-                        )}
-
-                        {/* Quick Actions */}
-                        <div className="flex items-center justify-center gap-3 mt-6">
-                            <button
-                                onClick={handleBlankProject}
-                                disabled={creatingProject}
-                                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-[#1e1e2e] rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
-                            >
-                                <Sparkles className="w-4 h-4 text-indigo-400" />
-                                Blank Project
-                            </button>
-                            <button className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-[#1e1e2e] rounded-lg text-sm flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-purple-400" />
-                                Use Template
-                            </button>
-                        </div>
-                    </div>
+            <main className="flex-1 flex flex-col overflow-hidden relative">
+                {/* Aurora Gradient Background */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    {/* Top blue glow */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-blue-600/30 blur-[120px] rounded-full" />
+                    {/* Center pink/magenta glow */}
+                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-pink-600/40 blur-[120px] rounded-full" />
+                    {/* Bottom warm glow */}
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1400px] h-[400px] bg-orange-600/20 blur-[120px] rounded-full" />
                 </div>
 
-                {/* Projects Section */}
-                <div className="bg-[#12121a] border-t border-[#1e1e2e] p-6">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setActiveTab("recent")}
-                                    className={`text-sm pb-1 ${activeTab === "recent" ? "font-medium text-white border-b-2 border-indigo-500" : "text-gray-400 hover:text-white"}`}
-                                >
-                                    Recently Viewed
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("projects")}
-                                    className={`text-sm pb-1 ${activeTab === "projects" ? "font-medium text-white border-b-2 border-indigo-500" : "text-gray-400 hover:text-white"}`}
-                                >
-                                    My projects ({projects.length})
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("templates")}
-                                    className={`text-sm pb-1 ${activeTab === "templates" ? "font-medium text-white border-b-2 border-indigo-500" : "text-gray-400 hover:text-white"}`}
-                                >
-                                    Templates
-                                </button>
-                            </div>
-                        </div>
+                {/* Scrollable Content */}
+                <div className="relative z-10 flex-1 flex flex-col overflow-y-auto">
+                    {/* Hero Section - Centered */}
+                    <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 min-h-[55vh]">
+                        <div className="w-full max-w-2xl text-center">
+                            {/* Greeting */}
+                            <h1 className="text-4xl md:text-5xl font-semibold mb-12 text-white">
+                                What's on your mind, {userName}?
+                            </h1>
 
-                        {/* Project Cards - Horizontal Scroll */}
-                        {projectsLoading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-                            </div>
-                        ) : projects.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                                <FolderOpen className="w-12 h-12 mb-4 opacity-50" />
-                                <p>No projects yet. Start building something amazing!</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto pb-4 -mx-4 px-4">
-                                <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-                                    {projects.map((project) => (
-                                        <div key={project.id} className="w-64 flex-shrink-0">
-                                            <ProjectCard
-                                                project={project}
-                                                onOpen={() => handleOpenProject(project.id)}
-                                                onDelete={() => deleteProjectById(project.id)}
+                            {/* Attached Images Preview */}
+                            {attachedFiles.length > 0 && (
+                                <div className="flex gap-2 mb-4 justify-center flex-wrap">
+                                    {attachedFiles.map((file) => (
+                                        <div key={file.id} className="relative group">
+                                            <img
+                                                src={file.dataUrl}
+                                                alt={file.name}
+                                                className="w-16 h-16 object-cover rounded-lg border border-white/10"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setAttachedFiles(prev => prev.filter(f => f.id !== file.id))}
+                                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
+                            )}
+
+                            {/* Prompt Input - Glassmorphism Style */}
+                            <form onSubmit={handleStartProject}>
+                                <div className={`relative bg-[#1a1a24]/80 backdrop-blur-xl border rounded-2xl overflow-hidden ${limitError ? 'border-red-500/50' : 'border-white/10'}`}>
+                                    {/* Main input row */}
+                                    <div className="flex items-center px-4 py-4">
+                                        <input
+                                            type="text"
+                                            value={prompt}
+                                            onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
+                                            placeholder={`Ask Forge to create ${typingText}${!isDeleting ? '|' : ''}`}
+                                            className="flex-1 bg-transparent text-white text-base placeholder-gray-500 focus:outline-none"
+                                            disabled={creatingProject || !canCreate}
+                                        />
+                                    </div>
+
+                                    {/* Bottom toolbar */}
+                                    <div className="flex items-center justify-between px-4 py-3 border-t border-white/5 bg-white/[0.02]">
+                                        <div className="flex items-center gap-1">
+                                            {/* Plus button */}
+                                            <button
+                                                type="button"
+                                                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                            {/* Attach button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAttachModal(true)}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${attachedFiles.length > 0
+                                                        ? 'text-indigo-400 bg-indigo-500/10'
+                                                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                <Paperclip className="w-4 h-4" />
+                                                <span>Attach</span>
+                                            </button>
+                                            {/* Theme button */}
+                                            <button
+                                                type="button"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-sm"
+                                            >
+                                                <Sparkles className="w-4 h-4" />
+                                                <span>Theme</span>
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            {/* Mode selector */}
+                                            <div className="flex items-center bg-white/5 rounded-lg p-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModelMode("fast")}
+                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "fast"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                        }`}
+                                                >
+                                                    Fast
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => canUseThinking && setModelMode("thinking")}
+                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "thinking"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                        } ${!canUseThinking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    Thinking
+                                                </button>
+                                            </div>
+                                            {/* Submit button */}
+                                            <button
+                                                type="submit"
+                                                disabled={!prompt.trim() || creatingProject || !canCreate}
+                                                className="w-8 h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center disabled:opacity-50 hover:opacity-90 transition-opacity"
+                                            >
+                                                {creatingProject ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <ArrowRight className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Error message */}
+                                {limitError && (
+                                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                        <p className="text-sm text-red-400">{limitError}</p>
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Projects Section - Bottom Card */}
+                    <div className="px-8 pb-8">
+                        <div className="relative bg-[#0f0f14]/90 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+                            {/* Subtle gradient border effect at top */}
+                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+
+                            <div className="relative p-6">
+                                {/* Header with tabs */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-6">
+                                        <button className="text-sm font-medium text-white border-b-2 border-orange-500 pb-1">
+                                            Recently viewed
+                                        </button>
+                                        <button className="text-sm text-gray-400 hover:text-white transition-colors pb-1 border-b-2 border-transparent">
+                                            My projects
+                                        </button>
+                                        <button className="text-sm text-gray-400 hover:text-white transition-colors pb-1 border-b-2 border-transparent">
+                                            Templates
+                                        </button>
+                                    </div>
+                                    <Link
+                                        to="/projects"
+                                        className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        Browse all
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Link>
+                                </div>
+
+                                {/* Projects horizontal scroll */}
+                                {projectsLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                                    </div>
+                                ) : projects.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                        <FolderOpen className="w-12 h-12 mb-4 opacity-50" />
+                                        <p>No projects yet. Start building something amazing!</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2">
+                                        {projects.slice(0, 6).map((project) => (
+                                            <ProjectCard
+                                                key={project.id}
+                                                project={project}
+                                                onOpen={() => handleOpenProject(project.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </main>
@@ -409,109 +401,82 @@ export default function Dashboard() {
     );
 }
 
-function SidebarItem({ icon: Icon, label, active, badge }: { icon: any; label: string; active?: boolean; badge?: number }) {
-    return (
-        <button className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${active
+// Navigation item component
+function NavItem({ icon: Icon, label, active, href }: { icon: any; label: string; active?: boolean; href?: string }) {
+    const className = `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${active
             ? "bg-white/10 text-white"
             : "text-gray-400 hover:text-white hover:bg-white/5"
-            }`}>
-            <div className="flex items-center gap-3">
+        }`;
+
+    if (href) {
+        return (
+            <Link to={href} className={className}>
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
-            </div>
-            {badge !== undefined && badge > 0 && (
-                <span className="text-xs text-gray-500">{badge}</span>
-            )}
+            </Link>
+        );
+    }
+
+    return (
+        <button className={className}>
+            <Icon className="w-4 h-4" />
+            <span>{label}</span>
         </button>
     );
 }
 
-function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () => void; onDelete: () => void }) {
-    const [showMenu, setShowMenu] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleClick = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setShowMenu(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
-    }, []);
-
-    const timeAgo = (date: string) => {
-        const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-        if (seconds < 60) return "just now";
-        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-        return `${Math.floor(seconds / 86400)}d ago`;
-    };
+// Project card component
+function ProjectCard({ project, onOpen }: { project: any; onOpen: () => void }) {
+    const timeAgo = getTimeAgo(project.updated_at || project.created_at);
 
     return (
-        <div className="group bg-[#0a0a0f] border border-[#1e1e2e] rounded-xl hover:border-indigo-500/30 transition-colors relative">
-            {/* Preview thumbnail or placeholder */}
-            <div
-                onClick={onOpen}
-                className="h-32 rounded-t-xl overflow-hidden flex items-center justify-center cursor-pointer relative"
-            >
+        <button
+            onClick={onOpen}
+            className="flex-shrink-0 w-64 group text-left"
+        >
+            {/* Thumbnail */}
+            <div className="relative aspect-[16/10] bg-[#1a1a24] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors">
                 {project.thumbnail ? (
                     <img
                         src={project.thumbnail}
                         alt={project.name}
-                        className="w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-900/20 to-purple-900/20 flex items-center justify-center">
-                        <Hammer className="w-8 h-8 text-indigo-500/30" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
+                        <FolderOpen className="w-8 h-8 text-gray-600" />
                     </div>
                 )}
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">Open Project</span>
+                    <span className="text-sm font-medium">Open project</span>
                 </div>
             </div>
 
             {/* Info */}
-            <div className="p-3">
-                <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                        <h3
-                            onClick={onOpen}
-                            className="text-sm font-medium truncate cursor-pointer hover:text-indigo-400"
-                        >
-                            {project.name}
-                        </h3>
-                        <p className="text-xs text-gray-500">{timeAgo(project.updated_at)}</p>
-                    </div>
-                    <div className="relative" ref={menuRef}>
-                        <button
-                            onClick={() => setShowMenu(!showMenu)}
-                            className="p-1 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                        {showMenu && (
-                            <div className="absolute right-0 bottom-full mb-1 w-36 bg-[#12121a] border border-[#1e1e2e] rounded-lg shadow-xl py-1 z-50">
-                                <button
-                                    onClick={() => { onOpen(); setShowMenu(false); }}
-                                    className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-2"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    Open
-                                </button>
-                                <button
-                                    onClick={() => { onDelete(); setShowMenu(false); }}
-                                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 flex items-center gap-2"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete
-                                </button>
-                            </div>
-                        )}
-                    </div>
+            <div className="flex items-start gap-2">
+                <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {(project.name || "U").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-400 transition-colors">
+                        {project.name || "Untitled"}
+                    </h3>
+                    <p className="text-xs text-gray-500">{timeAgo}</p>
                 </div>
             </div>
-        </div>
+        </button>
     );
+}
+
+function getTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return "Just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
 }
