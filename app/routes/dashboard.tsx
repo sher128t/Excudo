@@ -11,7 +11,7 @@ import {
 import { UserMenu } from "~/components/UserMenu";
 import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
 
-export type ModelMode = "fast" | "thinking";
+export type ModelMode = "plan" | "fast" | "thinking";
 
 // Typing animation prompts
 const TYPING_PROMPTS = [
@@ -30,7 +30,7 @@ export default function Dashboard() {
     const [prompt, setPrompt] = useState("");
     const [creatingProject, setCreatingProject] = useState(false);
     const [limitError, setLimitError] = useState("");
-    const [modelMode, setModelMode] = useState<ModelMode>("fast");
+    const [modelMode, setModelMode] = useState<ModelMode>("plan");
 
     // Attachment state
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -86,6 +86,13 @@ export default function Dashboard() {
     const handleStartProject = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!prompt.trim() || !user) return;
+
+        // Plan mode - go to chat without creating project
+        if (modelMode === "plan") {
+            sessionStorage.setItem("planningPrompt", prompt);
+            navigate("/chat");
+            return;
+        }
 
         if (!canCreate) {
             setLimitError(`You've reached your limit of ${projectLimit} projects. Upgrade to create more!`);
@@ -267,8 +274,8 @@ export default function Dashboard() {
                                                 type="button"
                                                 onClick={() => setShowAttachModal(true)}
                                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${attachedFiles.length > 0
-                                                        ? 'text-indigo-400 bg-indigo-500/10'
-                                                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                                    ? 'text-indigo-400 bg-indigo-500/10'
+                                                    : 'text-gray-400 hover:text-white hover:bg-white/10'
                                                     }`}
                                             >
                                                 <Paperclip className="w-4 h-4" />
@@ -289,21 +296,32 @@ export default function Dashboard() {
                                             <div className="flex items-center bg-white/5 rounded-lg p-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setModelMode("fast")}
-                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "fast"
-                                                            ? "bg-white/10 text-white"
-                                                            : "text-gray-400 hover:text-white"
+                                                    onClick={() => setModelMode("plan")}
+                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "plan"
+                                                        ? "bg-white/10 text-white"
+                                                        : "text-gray-400 hover:text-white"
                                                         }`}
                                                 >
-                                                    Fast
+                                                    Plan
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModelMode("fast")}
+                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "fast"
+                                                        ? "bg-white/10 text-white"
+                                                        : "text-gray-400 hover:text-white"
+                                                        }`}
+                                                >
+                                                    Build
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => canUseThinking && setModelMode("thinking")}
                                                     className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "thinking"
-                                                            ? "bg-white/10 text-white"
-                                                            : "text-gray-400 hover:text-white"
+                                                        ? "bg-white/10 text-white"
+                                                        : "text-gray-400 hover:text-white"
                                                         } ${!canUseThinking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    title={!canUseThinking ? 'Upgrade to use Thinking mode' : ''}
                                                 >
                                                     Thinking
                                                 </button>
@@ -404,8 +422,8 @@ export default function Dashboard() {
 // Navigation item component
 function NavItem({ icon: Icon, label, active, href }: { icon: any; label: string; active?: boolean; href?: string }) {
     const className = `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${active
-            ? "bg-white/10 text-white"
-            : "text-gray-400 hover:text-white hover:bg-white/5"
+        ? "bg-white/10 text-white"
+        : "text-gray-400 hover:text-white hover:bg-white/5"
         }`;
 
     if (href) {

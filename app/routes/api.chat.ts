@@ -113,8 +113,11 @@ export async function action({ request }: Route.ActionArgs) {
     const tier = userTier || "free";
     const requestedMode = modelMode || "fast";
 
-    // Free users can only use fast mode
-    const effectiveMode = tier === "free" ? "fast" : requestedMode;
+    // Plan mode uses fast model for chat-only responses
+    const isPlanMode = requestedMode === "plan";
+
+    // Free users can only use fast mode for building
+    const effectiveMode = isPlanMode ? "fast" : (tier === "free" ? "fast" : requestedMode);
 
     // Model mapping - using correct Anthropic model names
     // Fast uses Claude Haiku 4.5 (cheaper, faster) - good for basic websites
@@ -131,10 +134,38 @@ export async function action({ request }: Route.ActionArgs) {
     };
 
     const modelName = MODEL_MAP[effectiveMode as keyof typeof MODEL_MAP];
-    const maxTokens = MAX_TOKENS_MAP[effectiveMode as keyof typeof MAX_TOKENS_MAP];
+    const maxTokens = isPlanMode ? 4000 : MAX_TOKENS_MAP[effectiveMode as keyof typeof MAX_TOKENS_MAP];
 
-    console.log(`Using model: ${modelName} (mode: ${effectiveMode}, tier: ${tier}, maxTokens: ${maxTokens})`);
+    console.log(`Using model: ${modelName} (mode: ${requestedMode}, plan: ${isPlanMode}, tier: ${tier}, maxTokens: ${maxTokens})`);
 
+    // Plan mode - no tools, just conversational AI for planning/brainstorming
+    if (isPlanMode) {
+        const PLAN_SYSTEM_PROMPT = `You are a helpful AI assistant for planning and brainstorming web projects.
+
+Your role is to:
+- Help users think through their project ideas
+- Suggest features, design approaches, and technical considerations
+- Answer questions about web development, design patterns, and best practices
+- Help refine requirements before building
+- Discuss architecture, user flows, and component structure
+
+Be conversational, helpful, and encouraging. Ask clarifying questions when needed.
+Keep responses concise but thorough. Use markdown formatting for readability.
+
+Do NOT generate code files or use any tools. This is just a planning conversation.
+When the user is ready to build, suggest they switch to "Build" mode on the dashboard.`;
+
+        const result = streamText({
+            model: anthropic(modelName),
+            messages,
+            system: PLAN_SYSTEM_PROMPT,
+            maxTokens,
+        });
+
+        return result.toDataStreamResponse();
+    }
+
+    // Build mode - full code generation with tools
     const result = streamText({
         model: anthropic(modelName),
         messages,
