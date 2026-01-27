@@ -634,53 +634,68 @@ export function ChatInterface() {
                 )}
 
                 {/* Model Selector */}
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-gray-500">Mode:</span>
-                    <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
-                        <button
-                            type="button"
-                            onClick={() => setModelMode("plan")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "plan"
-                                ? "bg-indigo-500/20 text-indigo-400"
-                                : "text-gray-400 hover:text-white"
-                                }`}
-                        >
-                            <MessageCircle className="w-3 h-3" />
-                            Plan
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setModelMode("fast")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
-                                ? "bg-amber-500/20 text-amber-400"
-                                : "text-gray-400 hover:text-white"
-                                }`}
-                        >
-                            <Zap className="w-3 h-3" />
-                            Build
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (canUseThinking) {
-                                    setModelMode("thinking");
-                                } else {
-                                    setShowUpgradeModal(true);
-                                }
-                            }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
-                                ? "bg-purple-500/20 text-purple-400"
-                                : "text-gray-400 hover:text-white"
-                                }`}
-                        >
-                            <Crown className="w-3 h-3" />
-                            Thinking
-                            {!canUseThinking && (
-                                <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full ml-1">PRO</span>
-                            )}
-                        </button>
+                <div className="flex items-center gap-3 mb-3">
+                    {/* Plan mode - separate */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Mode:</span>
+                        <div className="bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
+                            <button
+                                type="button"
+                                onClick={() => setModelMode("plan")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "plan"
+                                    ? "bg-indigo-500/20 text-indigo-400"
+                                    : "text-gray-400 hover:text-white"
+                                    }`}
+                            >
+                                <MessageCircle className="w-3 h-3" />
+                                Plan
+                            </button>
+                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 ml-2">
+
+                    {/* Separator */}
+                    <div className="h-4 w-px bg-[#1e1e2e]" />
+
+                    {/* Build modes - grouped */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Build:</span>
+                        <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
+                            <button
+                                type="button"
+                                onClick={() => setModelMode("fast")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
+                                    ? "bg-amber-500/20 text-amber-400"
+                                    : "text-gray-400 hover:text-white"
+                                    }`}
+                            >
+                                <Zap className="w-3 h-3" />
+                                Fast
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (canUseThinking) {
+                                        setModelMode("thinking");
+                                    } else {
+                                        setShowUpgradeModal(true);
+                                    }
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "thinking"
+                                    ? "bg-purple-500/20 text-purple-400"
+                                    : "text-gray-400 hover:text-white"
+                                    }`}
+                            >
+                                <Crown className="w-3 h-3" />
+                                Thinking
+                                {!canUseThinking && (
+                                    <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full ml-1">PRO</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Mode description */}
+                    <span className="text-[10px] text-gray-500">
                         {modelMode === "plan"
                             ? "Ask questions or plan changes without modifying code"
                             : modelMode === "fast"
