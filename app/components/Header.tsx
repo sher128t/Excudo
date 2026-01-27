@@ -211,7 +211,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                 </div>
 
                 {/* Center - Tab Menus */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center bg-[#0d0d14] border border-[#1e1e2e] rounded-lg px-1">
                     <Dropdown
                         label="Code"
                         icon={<Code className="w-4 h-4" />}
@@ -221,6 +221,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                             { label: "Export to GitHub", disabled: true },
                         ]}
                     />
+                    <div className="w-px h-4 bg-[#1e1e2e]" />
                     <Dropdown
                         label="Terminal"
                         icon={<TerminalIcon className="w-4 h-4" />}
@@ -229,6 +230,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                             { label: "Run Command", disabled: true },
                         ]}
                     />
+                    <div className="w-px h-4 bg-[#1e1e2e]" />
                     <Dropdown
                         label="Design"
                         icon={<Palette className="w-4 h-4" />}
@@ -238,6 +240,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                             { label: "Typography", disabled: true },
                         ]}
                     />
+                    <div className="w-px h-4 bg-[#1e1e2e]" />
                     <Dropdown
                         label="Project"
                         icon={<Settings className="w-4 h-4" />}

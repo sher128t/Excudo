@@ -469,11 +469,11 @@ export function ChatInterface() {
                                                 className={`flex items-center gap-3 px-3 py-2 text-sm ${i !== 0 ? 'border-t border-[#1e1e2e]' : ''}`}
                                             >
                                                 {/* Status indicator */}
-                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${tool.state === 'result'
-                                                    ? 'bg-emerald-500/20'
-                                                    : 'bg-[#1e1e2e]'
+                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${(tool.state === 'result' || tool.result)
+                                                        ? 'bg-emerald-500/20'
+                                                        : 'bg-[#1e1e2e]'
                                                     }`}>
-                                                    {tool.state === 'call' ? (
+                                                    {tool.state === 'call' && !tool.result ? (
                                                         <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
                                                     ) : (
                                                         <Check className="w-3 h-3 text-emerald-400" />
