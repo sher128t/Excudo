@@ -7,7 +7,7 @@ import {
     Hammer, Home, Search, FolderOpen, Clock, Star, Compass,
     BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2,
     AlertCircle, Paperclip, X, ChevronRight, Layout, Share2,
-    MoreHorizontal, Trash2, ExternalLink
+    MoreHorizontal, Trash2, ExternalLink, Edit2
 } from "lucide-react";
 import { UserMenu } from "~/components/UserMenu";
 import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
@@ -26,7 +26,7 @@ const TYPING_PROMPTS = [
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading } = useAuth();
-    const { projects, loading: projectsLoading, createNewProject, deleteProjectById } = useProject();
+    const { projects, loading: projectsLoading, createNewProject, deleteProjectById, renameProjectById } = useProject();
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState("");
     const [creatingProject, setCreatingProject] = useState(false);
@@ -95,6 +95,25 @@ export default function Dashboard() {
         e.preventDefault();
         if (!prompt.trim() || !user) return;
 
+        // Helper function to generate smart project title
+        const generateTitle = async (userPrompt: string): Promise<string> => {
+            try {
+                const response = await fetch("/api/generate-title", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: userPrompt }),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.title || userPrompt.slice(0, 40);
+                }
+            } catch (error) {
+                console.error("Failed to generate title:", error);
+            }
+            // Fallback to truncated prompt
+            return userPrompt.slice(0, 40) + (userPrompt.length > 40 ? "..." : "");
+        };
+
         // Plan mode - create project and go to editor with plan mode
         if (modelMode === "plan") {
             if (!canCreate) {
@@ -103,7 +122,7 @@ export default function Dashboard() {
             }
             setCreatingProject(true);
             try {
-                const projectName = "Planning: " + prompt.slice(0, 40) + (prompt.length > 40 ? "..." : "");
+                const projectName = await generateTitle(prompt);
                 const project = await createNewProject(projectName);
                 if (project) {
                     sessionStorage.setItem("initialPrompt", prompt);
@@ -127,7 +146,7 @@ export default function Dashboard() {
 
         setCreatingProject(true);
         try {
-            const projectName = prompt.slice(0, 50) + (prompt.length > 50 ? "..." : "");
+            const projectName = await generateTitle(prompt);
             const project = await createNewProject(projectName);
 
             if (project) {
@@ -435,6 +454,7 @@ export default function Dashboard() {
                                                 project={project}
                                                 onOpen={() => handleOpenProject(project.id)}
                                                 onDelete={() => deleteProjectById(project.id)}
+                                                onRename={(newName) => renameProjectById(project.id, newName)}
                                             />
                                         ))}
                                     </div>
@@ -480,9 +500,18 @@ function NavItem({ icon: Icon, label, active, href }: { icon: any; label: string
 }
 
 // Project card component
-function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () => void; onDelete: () => void }) {
+function ProjectCard({ project, onOpen, onDelete, onRename }: { project: any; onOpen: () => void; onDelete: () => void; onRename: (newName: string) => void }) {
     const [showMenu, setShowMenu] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState(project.name || "");
     const timeAgo = getTimeAgo(project.updated_at || project.created_at);
+
+    const handleRename = () => {
+        if (newName.trim() && newName !== project.name) {
+            onRename(newName.trim());
+        }
+        setIsRenaming(false);
+    };
 
     return (
         <div className="flex-shrink-0 w-64 group relative">
@@ -490,8 +519,8 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
                 onClick={onOpen}
                 className="w-full text-left"
             >
-                {/* Thumbnail */}
-                <div className="relative aspect-[16/10] bg-[#1a1a24] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors">
+                {/* Thumbnail - redesigned with subtle gradient and project name */}
+                <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors bg-gradient-to-br from-[#1a1a2e] to-[#12121a]">
                     {project.thumbnail ? (
                         <img
                             src={project.thumbnail}
@@ -499,8 +528,11 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
-                            <FolderOpen className="w-8 h-8 text-gray-600" />
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                            <FolderOpen className="w-6 h-6 text-gray-600 mb-2" />
+                            <span className="text-sm font-medium text-gray-400 text-center line-clamp-2">
+                                {project.name || "Untitled"}
+                            </span>
                         </div>
                     )}
                     {/* Hover overlay */}
@@ -509,17 +541,28 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
                     </div>
                 </div>
 
-                {/* Info */}
-                <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {(project.name || "U").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
+                {/* Info - simplified without large initials */}
+                <div className="min-w-0">
+                    {isRenaming ? (
+                        <input
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onBlur={handleRename}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleRename();
+                                if (e.key === "Escape") { setIsRenaming(false); setNewName(project.name || ""); }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                            className="w-full text-sm font-medium text-white bg-white/10 border border-indigo-500/50 rounded px-2 py-1 focus:outline-none"
+                        />
+                    ) : (
                         <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-400 transition-colors">
                             {project.name || "Untitled"}
                         </h3>
-                        <p className="text-xs text-gray-500">{timeAgo}</p>
-                    </div>
+                    )}
+                    <p className="text-xs text-gray-500">{timeAgo}</p>
                 </div>
             </button>
 
@@ -540,6 +583,13 @@ function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () =
                         >
                             <ExternalLink className="w-4 h-4" />
                             Open
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsRenaming(true); setShowMenu(false); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                            Rename
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}

@@ -10,7 +10,7 @@ import { UserMenu } from "~/components/UserMenu";
 
 export default function Projects() {
     const { user, loading: authLoading } = useAuth();
-    const { projects, loading: projectsLoading, deleteProjectById, createNewProject } = useProject();
+    const { projects, loading: projectsLoading, deleteProjectById, createNewProject, renameProjectById } = useProject();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -174,6 +174,7 @@ export default function Projects() {
                                     project={project}
                                     onOpen={() => handleOpenProject(project.id)}
                                     onDelete={() => deleteProjectById(project.id)}
+                                    onRename={(newName) => renameProjectById(project.id, newName)}
                                 />
                             ) : (
                                 <ProjectListItem
@@ -181,6 +182,7 @@ export default function Projects() {
                                     project={project}
                                     onOpen={() => handleOpenProject(project.id)}
                                     onDelete={() => deleteProjectById(project.id)}
+                                    onRename={(newName) => renameProjectById(project.id, newName)}
                                 />
                             )
                         ))}
@@ -198,23 +200,35 @@ export default function Projects() {
     );
 }
 
-function ProjectGridCard({ project, onOpen, onDelete }: { project: any; onOpen: () => void; onDelete: () => void }) {
+function ProjectGridCard({ project, onOpen, onDelete, onRename }: { project: any; onOpen: () => void; onDelete: () => void; onRename: (newName: string) => void }) {
     const [showMenu, setShowMenu] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState(project.name || "");
     const timeAgo = getTimeAgo(project.updated_at || project.created_at);
+
+    const handleRename = () => {
+        if (newName.trim() && newName !== project.name) {
+            onRename(newName.trim());
+        }
+        setIsRenaming(false);
+    };
 
     return (
         <div className="group relative">
             <button onClick={onOpen} className="w-full text-left">
-                {/* Thumbnail */}
-                <div className="aspect-[4/3] bg-[#1a1a24] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors relative">
+                {/* Thumbnail - redesigned with subtle gradient and project name */}
+                <div className="aspect-[4/3] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors relative bg-gradient-to-br from-[#1a1a2e] to-[#12121a]">
                     {project.thumbnail ? (
                         <img src={project.thumbnail} alt={project.name} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
-                            <FolderOpen className="w-10 h-10 text-gray-600" />
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                            <FolderOpen className="w-8 h-8 text-gray-600 mb-2" />
+                            <span className="text-sm font-medium text-gray-400 text-center line-clamp-2">
+                                {project.name || "Untitled"}
+                            </span>
                         </div>
                     )}
-                    {/* Published badge example */}
+                    {/* Published badge */}
                     {project.published && (
                         <span className="absolute bottom-2 left-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded">
                             Published
@@ -222,15 +236,26 @@ function ProjectGridCard({ project, onOpen, onDelete }: { project: any; onOpen: 
                     )}
                 </div>
 
-                {/* Info */}
-                <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {(project.name || "U").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
+                {/* Info - simplified without large initials */}
+                <div className="min-w-0 flex-1">
+                    {isRenaming ? (
+                        <input
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onBlur={handleRename}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleRename();
+                                if (e.key === "Escape") { setIsRenaming(false); setNewName(project.name || ""); }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                            className="w-full text-sm font-medium text-white bg-white/10 border border-indigo-500/50 rounded px-2 py-1 focus:outline-none"
+                        />
+                    ) : (
                         <h3 className="text-sm font-medium text-white truncate">{project.name || "Untitled"}</h3>
-                        <p className="text-xs text-gray-500">Edited {timeAgo}</p>
-                    </div>
+                    )}
+                    <p className="text-xs text-gray-500">Edited {timeAgo}</p>
                 </div>
             </button>
 
@@ -253,6 +278,13 @@ function ProjectGridCard({ project, onOpen, onDelete }: { project: any; onOpen: 
                             Open
                         </button>
                         <button
+                            onClick={(e) => { e.stopPropagation(); setIsRenaming(true); setShowMenu(false); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+                        >
+                            <Pencil className="w-4 h-4" />
+                            Rename
+                        </button>
+                        <button
                             onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-white/5"
                         >
@@ -266,17 +298,26 @@ function ProjectGridCard({ project, onOpen, onDelete }: { project: any; onOpen: 
     );
 }
 
-function ProjectListItem({ project, onOpen, onDelete }: { project: any; onOpen: () => void; onDelete: () => void }) {
+function ProjectListItem({ project, onOpen, onDelete, onRename }: { project: any; onOpen: () => void; onDelete: () => void; onRename: (newName: string) => void }) {
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState(project.name || "");
     const timeAgo = getTimeAgo(project.updated_at || project.created_at);
+
+    const handleRename = () => {
+        if (newName.trim() && newName !== project.name) {
+            onRename(newName.trim());
+        }
+        setIsRenaming(false);
+    };
 
     return (
         <div className="flex items-center gap-4 px-4 py-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/5 hover:border-white/10 transition-colors group">
-            {/* Thumbnail */}
-            <div className="w-16 h-12 bg-[#1a1a24] rounded-lg overflow-hidden flex-shrink-0">
+            {/* Thumbnail - subtle gradient */}
+            <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#1a1a2e] to-[#12121a]">
                 {project.thumbnail ? (
                     <img src={project.thumbnail} alt={project.name} className="w-full h-full object-cover" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
+                    <div className="w-full h-full flex items-center justify-center">
                         <FolderOpen className="w-5 h-5 text-gray-600" />
                     </div>
                 )}
@@ -284,16 +325,34 @@ function ProjectListItem({ project, onOpen, onDelete }: { project: any; onOpen: 
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white truncate">{project.name || "Untitled"}</h3>
+                {isRenaming ? (
+                    <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onBlur={handleRename}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") handleRename();
+                            if (e.key === "Escape") { setIsRenaming(false); setNewName(project.name || ""); }
+                        }}
+                        autoFocus
+                        className="w-full text-sm font-medium text-white bg-white/10 border border-indigo-500/50 rounded px-2 py-1 focus:outline-none"
+                    />
+                ) : (
+                    <h3 className="text-sm font-medium text-white truncate">{project.name || "Untitled"}</h3>
+                )}
                 <p className="text-xs text-gray-500">Edited {timeAgo}</p>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={onOpen} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <button onClick={onOpen} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Open">
                     <ExternalLink className="w-4 h-4 text-gray-400" />
                 </button>
-                <button onClick={onDelete} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <button onClick={() => setIsRenaming(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Rename">
+                    <Pencil className="w-4 h-4 text-gray-400" />
+                </button>
+                <button onClick={onDelete} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Delete">
                     <Trash2 className="w-4 h-4 text-red-400" />
                 </button>
             </div>
