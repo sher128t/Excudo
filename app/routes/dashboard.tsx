@@ -6,7 +6,8 @@ import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
     Hammer, Home, Search, FolderOpen, Clock, Star, Compass,
     BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2,
-    AlertCircle, Paperclip, X, ChevronRight, Layout, Share2
+    AlertCircle, Paperclip, X, ChevronRight, Layout, Share2,
+    MoreHorizontal, Trash2, ExternalLink
 } from "lucide-react";
 import { UserMenu } from "~/components/UserMenu";
 import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
@@ -25,7 +26,7 @@ const TYPING_PROMPTS = [
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading } = useAuth();
-    const { projects, loading: projectsLoading, createNewProject } = useProject();
+    const { projects, loading: projectsLoading, createNewProject, deleteProjectById } = useProject();
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState("");
     const [creatingProject, setCreatingProject] = useState(false);
@@ -406,6 +407,7 @@ export default function Dashboard() {
                                                 key={project.id}
                                                 project={project}
                                                 onOpen={() => handleOpenProject(project.id)}
+                                                onDelete={() => deleteProjectById(project.id)}
                                             />
                                         ))}
                                     </div>
@@ -451,46 +453,78 @@ function NavItem({ icon: Icon, label, active, href }: { icon: any; label: string
 }
 
 // Project card component
-function ProjectCard({ project, onOpen }: { project: any; onOpen: () => void }) {
+function ProjectCard({ project, onOpen, onDelete }: { project: any; onOpen: () => void; onDelete: () => void }) {
+    const [showMenu, setShowMenu] = useState(false);
     const timeAgo = getTimeAgo(project.updated_at || project.created_at);
 
     return (
-        <button
-            onClick={onOpen}
-            className="flex-shrink-0 w-64 group text-left"
-        >
-            {/* Thumbnail */}
-            <div className="relative aspect-[16/10] bg-[#1a1a24] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors">
-                {project.thumbnail ? (
-                    <img
-                        src={project.thumbnail}
-                        alt={project.name}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
-                        <FolderOpen className="w-8 h-8 text-gray-600" />
+        <div className="flex-shrink-0 w-64 group relative">
+            <button
+                onClick={onOpen}
+                className="w-full text-left"
+            >
+                {/* Thumbnail */}
+                <div className="relative aspect-[16/10] bg-[#1a1a24] rounded-xl overflow-hidden border border-white/5 mb-3 group-hover:border-white/20 transition-colors">
+                    {project.thumbnail ? (
+                        <img
+                            src={project.thumbnail}
+                            alt={project.name}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600/20 to-purple-600/20">
+                            <FolderOpen className="w-8 h-8 text-gray-600" />
+                        </div>
+                    )}
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-sm font-medium">Open project</span>
+                    </div>
+                </div>
+
+                {/* Info */}
+                <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        {(project.name || "U").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-400 transition-colors">
+                            {project.name || "Untitled"}
+                        </h3>
+                        <p className="text-xs text-gray-500">{timeAgo}</p>
+                    </div>
+                </div>
+            </button>
+
+            {/* Menu button */}
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                    className="p-1.5 bg-black/50 backdrop-blur rounded-lg hover:bg-black/70 transition-colors"
+                >
+                    <MoreHorizontal className="w-4 h-4" />
+                </button>
+
+                {showMenu && (
+                    <div className="absolute right-0 top-full mt-1 bg-[#1a1a24] border border-white/10 rounded-lg py-1 min-w-32 z-20">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            Open
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-white/5"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                        </button>
                     </div>
                 )}
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-sm font-medium">Open project</span>
-                </div>
             </div>
-
-            {/* Info */}
-            <div className="flex items-start gap-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {(project.name || "U").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-400 transition-colors">
-                        {project.name || "Untitled"}
-                    </h3>
-                    <p className="text-xs text-gray-500">{timeAgo}</p>
-                </div>
-            </div>
-        </button>
+        </div>
     );
 }
 

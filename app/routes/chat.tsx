@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useChat } from "@ai-sdk/react";
+import ReactMarkdown from "react-markdown";
 import {
     Hammer, ArrowLeft, Send, Loader2, User, Bot, Sparkles
 } from "lucide-react";
@@ -111,8 +112,40 @@ export default function Chat() {
                                     : "bg-white/5 text-gray-200 border border-white/5"
                                     }`}
                             >
-                                <div className="text-sm whitespace-pre-wrap">
-                                    {message.content}
+                                <div className="text-sm">
+                                    {message.role === "assistant" ? (
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
+                                                h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0">{children}</h2>,
+                                                h3: ({ children }) => <h3 className="text-base font-medium mb-2 mt-2 first:mt-0">{children}</h3>,
+                                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                                                ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                                                li: ({ children }) => <li className="text-gray-200">{children}</li>,
+                                                code: ({ className, children }) => {
+                                                    const isBlock = className?.includes('language-');
+                                                    return isBlock ? (
+                                                        <pre className="bg-black/30 rounded-lg p-3 my-2 overflow-x-auto">
+                                                            <code className="text-sm text-emerald-400">{children}</code>
+                                                        </pre>
+                                                    ) : (
+                                                        <code className="bg-white/10 px-1.5 py-0.5 rounded text-pink-400">{children}</code>
+                                                    );
+                                                },
+                                                pre: ({ children }) => <>{children}</>,
+                                                blockquote: ({ children }) => (
+                                                    <blockquote className="border-l-2 border-purple-500 pl-3 my-2 text-gray-300 italic">{children}</blockquote>
+                                                ),
+                                                strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                                                em: ({ children }) => <em className="italic">{children}</em>,
+                                            }}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    ) : (
+                                        <span className="whitespace-pre-wrap">{message.content}</span>
+                                    )}
                                 </div>
                             </div>
                             {message.role === "user" && (
