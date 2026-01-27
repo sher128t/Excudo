@@ -95,10 +95,27 @@ export default function Dashboard() {
         e.preventDefault();
         if (!prompt.trim() || !user) return;
 
-        // Plan mode - go to chat without creating project
+        // Plan mode - create project and go to editor with plan mode
         if (modelMode === "plan") {
-            sessionStorage.setItem("planningPrompt", prompt);
-            navigate("/chat");
+            if (!canCreate) {
+                setLimitError(`You've reached your limit of ${projectLimit} projects. Upgrade to create more!`);
+                return;
+            }
+            setCreatingProject(true);
+            try {
+                const projectName = "Planning: " + prompt.slice(0, 40) + (prompt.length > 40 ? "..." : "");
+                const project = await createNewProject(projectName);
+                if (project) {
+                    sessionStorage.setItem("initialPrompt", prompt);
+                    sessionStorage.setItem("currentProjectId", project.id);
+                    sessionStorage.setItem("initialModelMode", "plan");
+                    navigate("/editor");
+                }
+            } catch (err) {
+                console.error("Failed to create project:", err);
+            } finally {
+                setCreatingProject(false);
+            }
             return;
         }
 

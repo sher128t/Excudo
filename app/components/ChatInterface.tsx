@@ -3,11 +3,12 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
 import { useAuth } from "~/context/AuthContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw, Zap, Crown } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw, Zap, Crown, MessageCircle } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
+import ReactMarkdown from "react-markdown";
 
-export type ModelMode = "fast" | "thinking";
+export type ModelMode = "plan" | "fast" | "thinking";
 
 export function ChatInterface() {
     const { writeFile, readFile, runCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
@@ -393,9 +394,9 @@ export function ChatInterface() {
             sessionStorage.removeItem("initialPrompt");
 
             // Read initial model mode from dashboard selection
-            const initialModelMode = sessionStorage.getItem("initialModelMode");
-            if (initialModelMode === "fast" || initialModelMode === "thinking") {
-                setModelMode(initialModelMode);
+            const initialMode = sessionStorage.getItem("initialModelMode");
+            if (initialMode === "plan" || initialMode === "fast" || initialMode === "thinking") {
+                setModelMode(initialMode);
             }
             sessionStorage.removeItem("initialModelMode");
 
@@ -502,9 +503,41 @@ export function ChatInterface() {
                                 )}
                                 {/* Message content */}
                                 {message.content && (
-                                    <div className="text-sm whitespace-pre-wrap">
+                                    <div className="text-sm">
                                         {typeof message.content === "string"
-                                            ? message.content
+                                            ? (message.role === "assistant" ? (
+                                                <ReactMarkdown
+                                                    components={{
+                                                        h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
+                                                        h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0">{children}</h2>,
+                                                        h3: ({ children }) => <h3 className="text-base font-medium mb-2 mt-2 first:mt-0">{children}</h3>,
+                                                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                                                        li: ({ children }) => <li className="text-gray-300">{children}</li>,
+                                                        code: ({ className, children }) => {
+                                                            const isBlock = className?.includes('language-');
+                                                            return isBlock ? (
+                                                                <pre className="bg-black/30 rounded-lg p-3 my-2 overflow-x-auto">
+                                                                    <code className="text-sm text-emerald-400">{children}</code>
+                                                                </pre>
+                                                            ) : (
+                                                                <code className="bg-white/10 px-1.5 py-0.5 rounded text-pink-400">{children}</code>
+                                                            );
+                                                        },
+                                                        pre: ({ children }) => <>{children}</>,
+                                                        blockquote: ({ children }) => (
+                                                            <blockquote className="border-l-2 border-purple-500 pl-3 my-2 text-gray-300 italic">{children}</blockquote>
+                                                        ),
+                                                        strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                                                        em: ({ children }) => <em className="italic">{children}</em>,
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
+                                            ) : (
+                                                <span className="whitespace-pre-wrap">{message.content}</span>
+                                            ))
                                             : Array.isArray(message.content)
                                                 ? (message.content as any[]).map((part: any, i: number) => (
                                                     <span key={i}>
@@ -606,6 +639,17 @@ export function ChatInterface() {
                     <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
                         <button
                             type="button"
+                            onClick={() => setModelMode("plan")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "plan"
+                                ? "bg-indigo-500/20 text-indigo-400"
+                                : "text-gray-400 hover:text-white"
+                                }`}
+                        >
+                            <MessageCircle className="w-3 h-3" />
+                            Plan
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setModelMode("fast")}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${modelMode === "fast"
                                 ? "bg-amber-500/20 text-amber-400"
@@ -613,7 +657,7 @@ export function ChatInterface() {
                                 }`}
                         >
                             <Zap className="w-3 h-3" />
-                            Fast
+                            Build
                         </button>
                         <button
                             type="button"
@@ -637,7 +681,11 @@ export function ChatInterface() {
                         </button>
                     </div>
                     <span className="text-[10px] text-gray-500 ml-2">
-                        {modelMode === "fast" ? "Faster responses, good for simple tasks" : "Better quality, more thorough"}
+                        {modelMode === "plan"
+                            ? "Ask questions or plan changes without modifying code"
+                            : modelMode === "fast"
+                                ? "Generate code quickly"
+                                : "Better quality, more thorough"}
                     </span>
                 </div>
 
