@@ -151,62 +151,42 @@ export function ChatInterface() {
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
 
-    // Generate a thumbnail for the project using canvas
-    const generateThumbnail = useCallback((projectName: string, projectDescription?: string): string => {
+    // Generate a thumbnail for the project using canvas - subtle dark design with project name
+    const generateThumbnail = useCallback((projectName: string, _projectDescription?: string): string => {
         const canvas = document.createElement('canvas');
         canvas.width = 400;
         canvas.height = 200;
         const ctx = canvas.getContext('2d');
         if (!ctx) return '';
 
-        // Generate unique colors based on project name
-        const baseColor = stringToHsl(projectName, 75, 45);
-        const accentColor = stringToHsl(projectName + "_accent", 80, 55);
-
-        // Create gradient background with unique colors
+        // Subtle dark gradient background
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, baseColor);
-        gradient.addColorStop(1, accentColor);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(1, '#12121a');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Get meaningful initials - try to extract key words from description or name
-        const source = projectDescription || projectName;
-        const words = source
-            .replace(/make\s*(me\s*)?(a\s*)?/gi, '')  // Remove "make me a"
-            .replace(/website\s*(for\s*)?(a\s*)?/gi, '')  // Remove "website for a"
-            .replace(/app\s*(for\s*)?(a\s*)?/gi, '')  // Remove "app for a"
-            .replace(/an?\s+/gi, '')  // Remove "a" and "an"
-            .split(/\s+/)
-            .filter(word => word.length > 2);
-
-        const initials = words
-            .slice(0, 2)
-            .map(word => word[0])
-            .join('')
-            .toUpperCase() || projectName.slice(0, 2).toUpperCase();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-        ctx.font = 'bold 80px system-ui, -apple-system, sans-serif';
+        // Add subtle folder icon
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.font = '40px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
+        ctx.fillText('📁', canvas.width / 2, canvas.height / 2 - 20);
 
-        // Add subtle grid pattern
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 20) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i, canvas.height);
-            ctx.stroke();
-        }
-        for (let i = 0; i < canvas.height; i += 20) {
-            ctx.beginPath();
-            ctx.moveTo(0, i);
-            ctx.lineTo(canvas.width, i);
-            ctx.stroke();
-        }
+        // Display project name (truncated if needed)
+        const displayName = projectName.length > 25
+            ? projectName.slice(0, 25) + '...'
+            : projectName;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.font = '18px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(displayName, canvas.width / 2, canvas.height / 2 + 25);
+
+        // Add subtle border effect
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 
         return canvas.toDataURL('image/jpeg', 0.7);
     }, []);
