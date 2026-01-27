@@ -317,39 +317,49 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            {/* Mode selector */}
-                                            <div className="flex items-center bg-white/5 rounded-lg p-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModelMode("plan")}
-                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "plan"
-                                                        ? "bg-white/10 text-white"
-                                                        : "text-gray-400 hover:text-white"
-                                                        }`}
-                                                >
-                                                    Plan
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModelMode("fast")}
-                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "fast"
-                                                        ? "bg-white/10 text-white"
-                                                        : "text-gray-400 hover:text-white"
-                                                        }`}
-                                                >
-                                                    Build
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => canUseThinking && setModelMode("thinking")}
-                                                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "thinking"
-                                                        ? "bg-white/10 text-white"
-                                                        : "text-gray-400 hover:text-white"
-                                                        } ${!canUseThinking ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    title={!canUseThinking ? 'Upgrade to use Thinking mode' : ''}
-                                                >
-                                                    Thinking
-                                                </button>
+                                            {/* Mode selector - Plan separate from Build modes */}
+                                            <div className="flex items-center gap-2">
+                                                {/* Plan button */}
+                                                <div className="bg-white/5 rounded-lg p-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setModelMode("plan")}
+                                                        className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "plan"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                            }`}
+                                                    >
+                                                        Plan
+                                                    </button>
+                                                </div>
+
+                                                {/* Separator */}
+                                                <div className="h-4 w-px bg-white/10" />
+
+                                                {/* Build modes */}
+                                                <div className="flex items-center bg-white/5 rounded-lg p-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setModelMode("fast")}
+                                                        className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "fast"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                            }`}
+                                                    >
+                                                        Fast
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => canUseThinking && setModelMode("thinking")}
+                                                        className={`px-3 py-1 rounded text-xs font-medium transition-all ${modelMode === "thinking"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                            } ${!canUseThinking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        title={!canUseThinking ? 'Upgrade to use Thinking mode' : ''}
+                                                    >
+                                                        Thinking
+                                                    </button>
+                                                </div>
                                             </div>
                                             {/* Submit button */}
                                             <button
