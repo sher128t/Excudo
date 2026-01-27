@@ -322,9 +322,22 @@ export function ChatInterface() {
                 projectFilesRef.current = { ...currentProject.files };
             }
 
-            // Load chat messages
+            // Load chat messages with preprocessed tool states
             if (currentProject.chat_messages && currentProject.chat_messages.length > 0) {
-                setMessages(currentProject.chat_messages);
+                // Fix tool invocation states - all loaded tools are complete
+                const preprocessedMessages = currentProject.chat_messages.map((message: any) => {
+                    if (message.role !== 'assistant' || !message.toolInvocations) {
+                        return message;
+                    }
+                    // Mark all tool invocations as complete since they're loaded from storage
+                    const fixedInvocations = message.toolInvocations.map((tool: any) => ({
+                        ...tool,
+                        state: 'result',
+                        result: tool.result || `${tool.toolName} completed`,
+                    }));
+                    return { ...message, toolInvocations: fixedInvocations };
+                });
+                setMessages(preprocessedMessages);
             }
         }
     }, [currentProject, setMessages]);
@@ -470,8 +483,8 @@ export function ChatInterface() {
                                             >
                                                 {/* Status indicator */}
                                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${(tool.state === 'result' || tool.result)
-                                                        ? 'bg-emerald-500/20'
-                                                        : 'bg-[#1e1e2e]'
+                                                    ? 'bg-emerald-500/20'
+                                                    : 'bg-[#1e1e2e]'
                                                     }`}>
                                                     {tool.state === 'call' && !tool.result ? (
                                                         <Loader2 className="w-3 h-3 animate-spin text-gray-400" />

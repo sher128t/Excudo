@@ -36,6 +36,14 @@ Create a component-based React app. For a typical landing page, create:
 - Include real stats/social proof when relevant
 - Make CTAs stand out with contrasting colors
 
+## COLOR CONTRAST RULES (CRITICAL - always follow)
+- NEVER use text color same as or similar to its background
+- On dark backgrounds (gray-800+): Use white, gray-100, or bright accent colors for text
+- On light backgrounds: Use gray-800+, black, or dark accent colors for text
+- On colored backgrounds: Ensure 4.5:1 minimum contrast ratio
+- Gradient text: Only use on solid backgrounds, not on images or gradients
+- Buttons: Text must strongly contrast button background (white on dark, dark on light)
+
 ## TECHNICAL REQUIREMENTS
 package.json: {"name":"app","version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build"},"dependencies":{"react":"^18.2.0","react-dom":"^18.2.0"},"devDependencies":{"@vitejs/plugin-react":"^4.2.0","vite":"^5.0.0","tailwindcss":"^3.4.0","postcss":"^8.0.0","autoprefixer":"^10.0.0"}}
 
