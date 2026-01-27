@@ -184,7 +184,7 @@ export default function Dashboard() {
                 {/* Logo */}
                 <div className="p-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
+                        <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                             <Hammer className="w-4 h-4 text-white" />
                         </div>
                         <span className="font-semibold text-white">Excudo</span>
@@ -194,7 +194,7 @@ export default function Dashboard() {
                 {/* My Workspace Dropdown */}
                 <div className="px-3 mb-2">
                     <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                        <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-orange-500 rounded flex items-center justify-center text-xs font-bold">
+                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded flex items-center justify-center text-xs font-bold">
                             {userName.charAt(0).toUpperCase()}
                         </div>
                         <span className="text-sm font-medium truncate flex-1 text-left">{userName}'s workspace</span>
