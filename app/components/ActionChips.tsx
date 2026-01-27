@@ -22,9 +22,9 @@ export function ActionChips({ onAction, disabled }: ActionChipsProps) {
                     key={action.label}
                     onClick={() => onAction(action.prompt)}
                     disabled={disabled}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#12121a] hover:bg-[#1a1a24] border border-[#1e1e2e] rounded-full text-xs text-gray-400 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group flex items-center gap-1.5 px-3 py-1.5 bg-[#12121a] hover:bg-[#1a1a24] border border-[#1e1e2e] hover:border-indigo-500/30 rounded-full text-xs text-gray-400 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <action.icon className="w-3 h-3" />
+                    <action.icon className="w-3 h-3 group-hover:text-indigo-400 transition-colors" />
                     <span>{action.label}</span>
                 </button>
             ))}

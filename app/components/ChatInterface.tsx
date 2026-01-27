@@ -424,12 +424,23 @@ export function ChatInterface() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center h-full">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <Sparkles className="w-8 h-8 text-indigo-400" />
+                        <div className="text-center max-w-md">
+                            {/* Animated gradient orb */}
+                            <div className="relative w-20 h-20 mx-auto mb-6">
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl opacity-20 blur-xl animate-pulse" />
+                                <div className="relative w-full h-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/20">
+                                    <Sparkles className="w-9 h-9 text-indigo-400" />
+                                </div>
                             </div>
-                            <h3 className="text-lg font-medium text-gray-300 mb-2">Let's build something</h3>
-                            <p className="text-sm text-gray-500 max-w-xs">Describe what you want to create and I'll help you build it.</p>
+                            <h3 className="text-xl font-semibold text-white mb-2">What would you like to build?</h3>
+                            <p className="text-sm text-gray-400 mb-6">Describe your idea and I'll create a complete, working application.</p>
+
+                            {/* Example prompts */}
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">A fitness tracking app</span>
+                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">Portfolio website</span>
+                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">E-commerce landing</span>
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -449,27 +460,35 @@ export function ChatInterface() {
                                     : "bg-[#12121a] border border-[#1e1e2e] text-gray-300"
                                     }`}
                             >
-                                {/* Tool invocations */}
+                                {/* Tool invocations - Cleaner step-list style */}
                                 {message.toolInvocations && message.toolInvocations.length > 0 && (
-                                    <div className="space-y-1.5 mb-2">
+                                    <div className="mb-3 rounded-lg border border-[#1e1e2e] bg-[#0d0d14] overflow-hidden">
                                         {(message.toolInvocations as any[]).map((tool: any, i: number) => (
                                             <div
                                                 key={i}
-                                                className="flex items-center gap-2 text-xs bg-[#1e1e2e] rounded-lg px-2.5 py-1.5"
+                                                className={`flex items-center gap-3 px-3 py-2 text-sm ${i !== 0 ? 'border-t border-[#1e1e2e]' : ''}`}
                                             >
-                                                <div className="text-indigo-400">
-                                                    {getToolIcon(tool.toolName)}
+                                                {/* Status indicator */}
+                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${tool.state === 'result'
+                                                    ? 'bg-emerald-500/20'
+                                                    : 'bg-[#1e1e2e]'
+                                                    }`}>
+                                                    {tool.state === 'call' ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                                                    ) : (
+                                                        <Check className="w-3 h-3 text-emerald-400" />
+                                                    )}
                                                 </div>
-                                                <span className="text-indigo-400 font-medium">{tool.toolName}</span>
-                                                <span className="text-gray-500 truncate max-w-[200px]">
-                                                    {tool.args?.path || tool.args?.command || ''}
-                                                </span>
-                                                {tool.state === 'call' && (
-                                                    <Loader2 className="w-3 h-3 animate-spin text-gray-400 ml-auto" />
-                                                )}
-                                                {tool.state === 'result' && (
-                                                    <Check className="w-3 h-3 text-emerald-400 ml-auto" />
-                                                )}
+                                                {/* Tool info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-gray-400">{getToolIcon(tool.toolName)}</span>
+                                                        <span className="text-gray-300 font-medium">{tool.toolName}</span>
+                                                        <span className="text-gray-500 truncate text-xs">
+                                                            {tool.args?.path || tool.args?.command || ''}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -545,7 +564,11 @@ export function ChatInterface() {
                         <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-2.5">
                             <div className="flex items-center gap-2 text-sm text-gray-400">
                                 <span>Thinking</span>
-                                <span className="animate-pulse">...</span>
+                                <span className="flex gap-0.5">
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -677,27 +700,30 @@ export function ChatInterface() {
                     </span>
                 </div>
 
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center relative">
                     <button
                         type="button"
                         onClick={() => setShowAttachModal(true)}
-                        className={`p-3 rounded-xl transition-colors ${attachedFiles.length > 0 ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`p-3 rounded-xl transition-all ${attachedFiles.length > 0 ? 'text-indigo-400 bg-indigo-500/10 shadow-lg shadow-indigo-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         title="Attach images"
                     >
                         <Paperclip className="w-5 h-5" />
                     </button>
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={handleInputChange}
-                        placeholder="Describe your app..."
-                        className="flex-1 bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
-                    />
+                    <div className="flex-1 relative group">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={handleInputChange}
+                            placeholder="Describe your app..."
+                            className="relative w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 transition-all"
+                        />
+                    </div>
                     {isLoading ? (
                         <button
                             type="button"
                             onClick={() => stop()}
-                            className="px-4 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                            className="px-5 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
                         >
                             <Square className="w-4 h-4" />
                             <span>Stop</span>
@@ -706,7 +732,7 @@ export function ChatInterface() {
                         <button
                             type="submit"
                             disabled={!input.trim() && attachedFiles.length === 0}
-                            className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                            className="px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 disabled:shadow-none"
                         >
                             <Send className="w-4 h-4" />
                             <span>Send</span>
