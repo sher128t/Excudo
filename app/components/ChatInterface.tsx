@@ -151,7 +151,7 @@ export function ChatInterface() {
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
 
-    // Generate a thumbnail for the project using canvas - subtle dark design with project name
+    // Generate a thumbnail for the project using canvas - unique subtle gradient per project
     const generateThumbnail = useCallback((projectName: string, _projectDescription?: string): string => {
         const canvas = document.createElement('canvas');
         canvas.width = 400;
@@ -159,36 +159,29 @@ export function ChatInterface() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return '';
 
-        // Subtle dark gradient background
+        // Generate unique but subtle hue based on project name
+        let hash = 0;
+        for (let i = 0; i < projectName.length; i++) {
+            hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+
+        // Create subtle dark gradient with unique hue
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(1, '#12121a');
+        gradient.addColorStop(0, `hsl(${hue}, 30%, 15%)`);  // Darker, desaturated
+        gradient.addColorStop(1, `hsl(${(hue + 30) % 360}, 25%, 10%)`);  // Slightly different hue
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Add subtle folder icon
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.font = '40px system-ui, -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('📁', canvas.width / 2, canvas.height / 2 - 20);
+        // Add subtle noise/texture effect
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            ctx.fillRect(x, y, 2, 2);
+        }
 
-        // Display project name (truncated if needed)
-        const displayName = projectName.length > 25
-            ? projectName.slice(0, 25) + '...'
-            : projectName;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.font = '18px system-ui, -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(displayName, canvas.width / 2, canvas.height / 2 + 25);
-
-        // Add subtle border effect
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-
-        return canvas.toDataURL('image/jpeg', 0.7);
+        return canvas.toDataURL('image/jpeg', 0.8);
     }, []);
 
     // Debounced save of project files
