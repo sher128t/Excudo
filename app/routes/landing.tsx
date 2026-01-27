@@ -86,7 +86,7 @@ export default function Landing() {
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
                             <Hammer className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold text-xl bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Forge</span>
+                        <span className="font-bold text-xl bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Excudo</span>
                     </div>
                     <div className="hidden md:flex items-center gap-8">
                         <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm">Features</a>
@@ -221,7 +221,7 @@ export default function Landing() {
                     <div className="text-center mb-20">
                         <span className="text-indigo-400 font-medium text-sm uppercase tracking-wider">Features</span>
                         <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Everything you need to ship fast</h2>
-                        <p className="text-gray-400 max-w-xl mx-auto text-lg">From idea to deploy in minutes, not weeks. Forge handles the complexity so you can focus on what matters.</p>
+                        <p className="text-gray-400 max-w-xl mx-auto text-lg">From idea to deploy in minutes, not weeks. Excudo handles the complexity so you can focus on what matters.</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
@@ -257,7 +257,7 @@ export default function Landing() {
                         <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-30" />
 
                         {[
-                            { step: "01", title: "Describe Your Vision", desc: "Tell Forge what you want to build in plain English. Be as detailed or simple as you like.", icon: Sparkles },
+                            { step: "01", title: "Describe Your Vision", desc: "Tell Excudo what you want to build in plain English. Be as detailed or simple as you like.", icon: Sparkles },
                             { step: "02", title: "Watch AI Build", desc: "AI generates your app in real-time. See files created and preview updates instantly.", icon: Cpu },
                             { step: "03", title: "Iterate & Deploy", desc: "Refine with follow-up prompts. Export code or deploy with one click when ready.", icon: Rocket },
                         ].map((item, i) => (
@@ -400,7 +400,7 @@ export default function Landing() {
                     <div className="relative bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-3xl p-16">
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to build something amazing?</h2>
                         <p className="text-gray-400 mb-10 max-w-xl mx-auto text-lg">
-                            Join thousands of builders shipping faster with Forge.
+                            Join thousands of builders shipping faster with Excudo.
                             Start for free, no credit card required.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -430,7 +430,7 @@ export default function Landing() {
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                                 <Hammer className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold text-lg">Forge</span>
+                            <span className="font-bold text-lg">Excudo</span>
                         </div>
                         <div className="flex items-center gap-8 text-sm text-gray-500">
                             <a href="#" className="hover:text-white transition-colors">Terms</a>
@@ -448,7 +448,7 @@ export default function Landing() {
                         </div>
                     </div>
                     <div className="text-center mt-12 text-sm text-gray-600">
-                        © 2025 Forge. All rights reserved.
+                        © 2025 Excudo. All rights reserved.
                     </div>
                 </div>
             </footer>

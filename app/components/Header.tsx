@@ -80,8 +80,8 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 
     return (
         <div className={`fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border animate-slide-up z-[200] ${type === 'success'
-                ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}>
             {type === 'success' ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
             <span className="text-sm font-medium">{message}</span>
@@ -182,7 +182,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                             <Hammer className="w-5 h-5 text-white" />
                         </div>
                         <span className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                            Forge
+                            Excudo
                         </span>
                     </Link>
 

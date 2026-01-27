@@ -79,7 +79,7 @@ export default function Login() {
                         <Hammer className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                        Welcome back to Forge
+                        Welcome back to Excudo
                     </h1>
                     <p className="text-gray-500 mt-2">Sign in to continue building</p>
                 </div>

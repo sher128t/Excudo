@@ -187,7 +187,7 @@ export default function Dashboard() {
                         <div className="w-7 h-7 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
                             <Hammer className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-semibold text-white">Forge</span>
+                        <span className="font-semibold text-white">Excudo</span>
                     </div>
                 </div>
 
@@ -227,7 +227,7 @@ export default function Dashboard() {
                 <div className="p-3 space-y-2">
                     <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm">
                         <Share2 className="w-4 h-4" />
-                        <span>Share Forge</span>
+                        <span>Share Excudo</span>
                         <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">3 credits</span>
                     </button>
                     <Link
@@ -297,7 +297,7 @@ export default function Dashboard() {
                                             type="text"
                                             value={prompt}
                                             onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
-                                            placeholder={`Ask Forge to create ${typingText}${!isDeleting ? '|' : ''}`}
+                                            placeholder={`Ask Excudo to create ${typingText}${!isDeleting ? '|' : ''}`}
                                             className="flex-1 bg-transparent text-white text-base placeholder-gray-500 focus:outline-none"
                                             disabled={creatingProject || !canCreate}
                                         />

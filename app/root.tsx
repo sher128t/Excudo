@@ -32,7 +32,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export const meta: Route.MetaFunction = () => [
-  { title: "Forge - AI App Builder" },
+  { title: "Excudo - AI App Builder" },
   { name: "description", content: "Build apps with AI. Describe your idea, watch it come to life." },
 ];
 
