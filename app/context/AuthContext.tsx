@@ -179,12 +179,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             if (error) return { error: error.message };
 
-            // Update profile with full_name if user was created
+            // Save full_name to profile - use upsert with retry since trigger may not have run yet
             if (data.user && fullName) {
-                await supabase
-                    .from("profiles")
-                    .update({ full_name: fullName })
-                    .eq("id", data.user.id);
+                const userId = data.user.id;
+                const userEmail = data.user.email || email;
+
+                // Try upsert immediately, then retry after delay if needed
+                const tryUpsert = async () => {
+                    const { error: upsertError } = await supabase
+                        .from("profiles")
+                        .upsert({
+                            id: userId,
+                            email: userEmail,
+                            full_name: fullName,
+                            tier: "free",
+                            credits: 10
+                        }, { onConflict: 'id' });
+                    return !upsertError;
+                };
+
+                // First attempt
+                if (!await tryUpsert()) {
+                    // Retry after short delay (in case trigger is slower)
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await tryUpsert();
+                }
             }
 
             return {};
