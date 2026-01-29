@@ -179,35 +179,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             if (error) return { error: error.message };
 
-            // Save full_name to profile - use upsert with retry since trigger may not have run yet
+            // Save full_name to profile after trigger creates the row
             if (data.user && fullName) {
                 const userId = data.user.id;
-                const userEmail = data.user.email || email;
+                console.log("Attempting to save full_name for user:", userId, fullName);
 
-                // Try upsert immediately, then retry after delay if needed
-                const tryUpsert = async () => {
-                    const { error: upsertError } = await supabase
+                // Wait for the database trigger to create the profile, then update it
+                const updateProfile = async (retries = 5): Promise<boolean> => {
+                    // Wait a bit for the trigger to run
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    const { error: updateError } = await supabase
                         .from("profiles")
-                        .upsert({
-                            id: userId,
-                            email: userEmail,
-                            full_name: fullName,
-                            tier: "free",
-                            credits: 10
-                        }, { onConflict: 'id' });
-                    return !upsertError;
+                        .update({ full_name: fullName })
+                        .eq("id", userId);
+
+                    if (updateError) {
+                        console.log("Update attempt failed:", updateError.message, "retries left:", retries);
+                        if (retries > 0) {
+                            return updateProfile(retries - 1);
+                        }
+                        return false;
+                    }
+                    console.log("Successfully saved full_name to profile");
+                    return true;
                 };
 
-                // First attempt
-                if (!await tryUpsert()) {
-                    // Retry after short delay (in case trigger is slower)
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    await tryUpsert();
-                }
+                await updateProfile();
             }
 
             return {};
         } catch (err) {
+            console.error("Signup error:", err);
             return { error: "Sign up failed" };
         }
     };
