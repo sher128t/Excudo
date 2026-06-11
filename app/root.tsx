@@ -33,7 +33,15 @@ export const links: Route.LinksFunction = () => [
 
 export const meta: Route.MetaFunction = () => [
   { title: "Excudo - AI App Builder" },
-  { name: "description", content: "Build apps with AI. Describe your idea, watch it come to life." },
+  { name: "description", content: "Build apps with AI. Describe your idea, watch it come to life right in your browser, then publish it to the web." },
+  { name: "theme-color", content: "#030308" },
+  { property: "og:type", content: "website" },
+  { property: "og:site_name", content: "Excudo" },
+  { property: "og:title", content: "Excudo - AI App Builder" },
+  { property: "og:description", content: "Build apps with AI. Describe your idea, watch it come to life right in your browser, then publish it to the web." },
+  { name: "twitter:card", content: "summary_large_image" },
+  { name: "twitter:title", content: "Excudo - AI App Builder" },
+  { name: "twitter:description", content: "Build apps with AI. Describe your idea, watch it come to life right in your browser." },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -87,14 +95,25 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
+    <main className="min-h-screen bg-[#030308] text-white flex items-center justify-center p-6">
+      <div className="text-center max-w-lg">
+        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
+          <span className="text-2xl font-bold">!</span>
+        </div>
+        <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{message}</h1>
+        <p className="text-gray-400 mb-8">{details}</p>
+        <a
+          href="/"
+          className="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/20"
+        >
+          Back to home
+        </a>
+        {stack && (
+          <pre className="w-full p-4 mt-8 overflow-x-auto text-left text-xs text-gray-500 bg-white/5 border border-white/10 rounded-xl">
+            <code>{stack}</code>
+          </pre>
+        )}
+      </div>
     </main>
   );
 }

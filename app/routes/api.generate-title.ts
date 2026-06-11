@@ -1,10 +1,17 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import type { Route } from "./+types/api.generate-title";
+import { getAuthenticatedUser } from "~/lib/auth.server";
 
 export async function action({ request }: Route.ActionArgs) {
     if (request.method !== "POST") {
         return Response.json({ error: "Method not allowed" }, { status: 405 });
+    }
+
+    // Require a signed-in user - this endpoint spends Anthropic credits
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+        return Response.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     try {

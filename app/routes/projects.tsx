@@ -74,7 +74,7 @@ export default function Projects() {
             <header className="flex items-center justify-between px-6 py-4 border-b border-white/5">
                 <div className="flex items-center gap-4">
                     <Link to="/" className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
+                        <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <Hammer className="w-4 h-4 text-white" />
                         </div>
                     </Link>
@@ -83,16 +83,15 @@ export default function Projects() {
                             <ArrowLeft className="w-4 h-4" />
                         </Link>
                         <h1 className="text-lg font-semibold text-white">Projects</h1>
-                        <span className="text-sm text-gray-500">•••</span>
                     </div>
                 </div>
                 <UserMenu />
             </header>
 
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                 {/* Search */}
-                <div className="relative w-64">
+                <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                         type="text"

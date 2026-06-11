@@ -6,9 +6,13 @@ Excudo is a browser-based development environment that uses Claude AI to generat
 
 ## Features
 
-- **AI Code Generation** — Describe your app in plain English and Claude builds a complete React + Tailwind project with components, routing, and styling
+- **AI Code Generation** — Describe your app in plain English and Claude builds a complete React + Tailwind project on top of a pre-baked Vite starter template
 - **Real-Time Preview** — See your app update live in an embedded browser as files are generated
-- **Built-in Code Editor** — Monaco editor with file tree, syntax highlighting, and inline editing
+- **AI Error Fixing** — Build errors from the dev server are detected automatically; one click sends them to the AI to find and fix the root cause
+- **Project-Aware Edits** — The AI can list and read your project files (`readFile`/`listFiles` tools), so follow-up edits are grounded in real code
+- **Version History** — Every AI edit is snapshotted; roll back to any previous version from the editor
+- **One-Click Publish** — Build and deploy your app to a live `*.netlify.app` URL straight from the editor
+- **Built-in Code Editor** — Monaco editor with file tree, syntax highlighting, and inline editing (manual saves persist to your project)
 - **Integrated Terminal** — Full shell running in the browser via WebContainers
 - **Planning Mode** — Brainstorm and refine ideas with AI before building
 - **Project Management** — Save, rename, delete, and revisit projects from a dashboard
@@ -86,6 +90,7 @@ forge/
 - npm
 - [Supabase](https://supabase.com) account (free tier works)
 - [Anthropic](https://console.anthropic.com) API key
+- [Netlify](https://app.netlify.com/user/applications#personal-access-tokens) personal access token (optional — required for one-click publish)
 
 ### Installation
 
@@ -109,7 +114,8 @@ forge/
 4. **Set up the database**
    - Create a new Supabase project
    - Go to the SQL Editor and run the contents of [`supabase/schema.sql`](supabase/schema.sql)
-   - This creates the `profiles`, `projects`, and `chats` tables with Row Level Security
+   - This creates the `profiles`, `projects`, `chats`, and `project_versions` tables with Row Level Security
+   - If you have an existing database, run the migration statements at the bottom of `schema.sql` instead
 
 5. **Start the dev server**
    ```bash

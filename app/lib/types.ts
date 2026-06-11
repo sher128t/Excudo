@@ -18,8 +18,18 @@ export interface Project {
     files: Record<string, string>;
     chat_messages?: any[];  // Store chat history
     thumbnail?: string;  // Base64 screenshot of preview
+    netlify_site_id?: string;  // Netlify site for one-click deploy
+    deploy_url?: string;       // Last successful deploy URL
     created_at: string;
     updated_at: string;
+}
+
+export interface ProjectVersion {
+    id: string;
+    project_id: string;
+    files?: Record<string, string>;  // Omitted in list queries
+    label?: string | null;
+    created_at: string;
 }
 
 export interface Chat {

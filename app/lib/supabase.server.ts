@@ -29,13 +29,17 @@ export function createSupabaseServerClient(request: Request) {
     return { supabase, headers };
 }
 
-// Parse cookies from header string
+// Parse cookies from header string (split on the FIRST "=" only - cookie
+// values like base64 session tokens can themselves contain "=")
 function parseCookies(cookieString: string): Record<string, string> {
     const cookies: Record<string, string> = {};
     cookieString.split(";").forEach((cookie) => {
-        const [name, value] = cookie.trim().split("=");
-        if (name) {
-            cookies[name] = value || "";
+        const trimmed = cookie.trim();
+        const eqIndex = trimmed.indexOf("=");
+        if (eqIndex > 0) {
+            const name = trimmed.slice(0, eqIndex);
+            const value = trimmed.slice(eqIndex + 1);
+            cookies[name] = value;
         }
     });
     return cookies;

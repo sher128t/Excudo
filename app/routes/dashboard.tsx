@@ -4,9 +4,8 @@ import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
 import { canCreateProject, getProjectLimit } from "~/lib/types";
 import {
-    Hammer, Home, Search, FolderOpen, Clock, Star, Compass,
-    BookOpen, Sparkles, Plus, ArrowRight, Zap, Loader2,
-    AlertCircle, Paperclip, X, ChevronRight, Layout, Share2,
+    Hammer, Home, FolderOpen, ArrowRight, Zap, Loader2,
+    AlertCircle, Paperclip, X,
     MoreHorizontal, Trash2, ExternalLink, Edit2
 } from "lucide-react";
 import { UserMenu } from "~/components/UserMenu";
@@ -101,6 +100,15 @@ export default function Dashboard() {
 
     // Get user's display name
     const userName = profile?.full_name || profile?.email?.split("@")[0] || user?.email?.split("@")[0] || "there";
+
+    // Pick up the prompt typed on the landing page before signup
+    useEffect(() => {
+        const landingPrompt = sessionStorage.getItem("landingPrompt");
+        if (landingPrompt) {
+            sessionStorage.removeItem("landingPrompt");
+            setPrompt(landingPrompt);
+        }
+    }, []);
 
     // Redirect to landing if not authenticated
     useEffect(() => {
@@ -203,9 +211,23 @@ export default function Dashboard() {
                 userId={user.id}
                 onComplete={handleOnboardingComplete}
             />
-            <div className="h-screen w-screen bg-[#0a0a0f] text-white flex overflow-hidden">
-                {/* Minimal Sidebar */}
-                <aside className="w-56 bg-[#0a0a0f]/80 backdrop-blur-xl border-r border-white/5 flex flex-col">
+            <div className="h-screen w-screen bg-[#0a0a0f] text-white flex flex-col md:flex-row overflow-hidden">
+                {/* Mobile top bar */}
+                <div className="md:hidden flex items-center justify-between px-4 h-14 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <Hammer className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-semibold text-white">Excudo</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Link to="/projects" className="text-sm text-gray-400 hover:text-white transition-colors">Projects</Link>
+                        <UserMenu />
+                    </div>
+                </div>
+
+                {/* Minimal Sidebar (desktop) */}
+                <aside className="hidden md:flex w-56 bg-[#0a0a0f]/80 backdrop-blur-xl border-r border-white/5 flex-col">
                     {/* Logo */}
                     <div className="p-4">
                         <div className="flex items-center gap-2">
@@ -216,45 +238,28 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* My Workspace Dropdown */}
+                    {/* My Workspace */}
                     <div className="px-3 mb-2">
-                        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                        <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5">
                             <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded flex items-center justify-center text-xs font-bold">
                                 {userName.charAt(0).toUpperCase()}
                             </div>
                             <span className="text-sm font-medium truncate flex-1 text-left">{userName}'s workspace</span>
-                            <ChevronRight className="w-4 h-4 text-gray-500 rotate-90" />
-                        </button>
+                        </div>
                     </div>
 
                     {/* Navigation */}
                     <nav className="flex-1 px-3 space-y-1">
                         <NavItem icon={Home} label="Home" active />
-                        <NavItem icon={Search} label="Search" />
 
                         <div className="pt-4 pb-2">
                             <p className="text-[11px] text-gray-500 uppercase tracking-wider px-3 font-medium">Projects</p>
                         </div>
-                        <NavItem icon={Clock} label="Recent" />
                         <NavItem icon={FolderOpen} label="All projects" href="/projects" />
-                        <NavItem icon={Star} label="Starred" />
-                        <NavItem icon={Share2} label="Shared with me" />
-
-                        <div className="pt-4 pb-2">
-                            <p className="text-[11px] text-gray-500 uppercase tracking-wider px-3 font-medium">Resources</p>
-                        </div>
-                        <NavItem icon={Compass} label="Discover" />
-                        <NavItem icon={Layout} label="Templates" />
-                        <NavItem icon={BookOpen} label="Learn" />
                     </nav>
 
                     {/* Bottom */}
                     <div className="p-3 space-y-2">
-                        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm">
-                            <Share2 className="w-4 h-4" />
-                            <span>Share Excudo</span>
-                            <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">3 credits</span>
-                        </button>
                         <Link
                             to="/pricing"
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 hover:border-indigo-500/50 transition-colors text-sm"
@@ -331,13 +336,6 @@ export default function Dashboard() {
                                         {/* Bottom toolbar */}
                                         <div className="flex items-center justify-between px-4 py-3 border-t border-white/5 bg-white/[0.02]">
                                             <div className="flex items-center gap-1">
-                                                {/* Plus button */}
-                                                <button
-                                                    type="button"
-                                                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                </button>
                                                 {/* Attach button */}
                                                 <button
                                                     type="button"
@@ -349,14 +347,6 @@ export default function Dashboard() {
                                                 >
                                                     <Paperclip className="w-4 h-4" />
                                                     <span>Attach</span>
-                                                </button>
-                                                {/* Theme button */}
-                                                <button
-                                                    type="button"
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-sm"
-                                                >
-                                                    <Sparkles className="w-4 h-4" />
-                                                    <span>Theme</span>
                                                 </button>
                                             </div>
 
@@ -409,7 +399,7 @@ export default function Dashboard() {
                                                 <button
                                                     type="submit"
                                                     disabled={!prompt.trim() || creatingProject || !canCreate}
-                                                    className="w-8 h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center disabled:opacity-50 hover:opacity-90 transition-opacity"
+                                                    className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center disabled:opacity-50 hover:opacity-90 transition-opacity"
                                                 >
                                                     {creatingProject ? (
                                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -436,22 +426,14 @@ export default function Dashboard() {
                         <div className="px-8 pb-8">
                             <div className="relative bg-[#0f0f14]/90 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
                                 {/* Subtle gradient border effect at top */}
-                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
 
                                 <div className="relative p-6">
-                                    {/* Header with tabs */}
+                                    {/* Header */}
                                     <div className="flex items-center justify-between mb-6">
-                                        <div className="flex items-center gap-6">
-                                            <button className="text-sm font-medium text-white border-b-2 border-orange-500 pb-1">
-                                                Recently viewed
-                                            </button>
-                                            <button className="text-sm text-gray-400 hover:text-white transition-colors pb-1 border-b-2 border-transparent">
-                                                My projects
-                                            </button>
-                                            <button className="text-sm text-gray-400 hover:text-white transition-colors pb-1 border-b-2 border-transparent">
-                                                Templates
-                                            </button>
-                                        </div>
+                                        <span className="text-sm font-medium text-white border-b-2 border-indigo-500 pb-1">
+                                            Recently viewed
+                                        </span>
                                         <Link
                                             to="/projects"
                                             className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"

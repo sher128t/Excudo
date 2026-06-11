@@ -1,9 +1,13 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useAtom } from "jotai";
 import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
 import { useAuth } from "~/context/AuthContext";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, Image as ImageIcon, AlertCircle, RefreshCw, Zap, Crown, MessageCircle } from "lucide-react";
+import { fixRequestAtom } from "~/store/atoms";
+import { TEMPLATE_FILES } from "~/lib/template";
+import { createProjectVersion } from "~/lib/projects";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, AlertCircle, RefreshCw, Zap, Crown, MessageCircle, Eye, FolderTree } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 import ReactMarkdown from "react-markdown";
@@ -11,10 +15,9 @@ import ReactMarkdown from "react-markdown";
 export type ModelMode = "plan" | "fast" | "thinking";
 
 export function ChatInterface() {
-    const { writeFile, readFile, runCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
+    const { writeFile, readFile, deleteFile, listFiles, runShellCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
     const { currentProject, saveProject } = useProject();
-    const { profile } = useAuth();
-    const processedToolCalls = useRef<Set<string>>(new Set());
+    const { profile, refreshProfile } = useAuth();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialPromptHandled = useRef(false);
     const projectLoadedRef = useRef<string | null>(null);
@@ -22,6 +25,7 @@ export function ChatInterface() {
     const fileSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    const [fixRequest, setFixRequest] = useAtom(fixRequestAtom);
 
     // Model mode state
     const [modelMode, setModelMode] = useState<ModelMode>("fast");
@@ -34,37 +38,111 @@ export function ChatInterface() {
     const [error, setError] = useState<{ message: string; retryContent?: string } | null>(null);
     const lastMessageRef = useRef<string>("");
 
-    // Track files for saving to project
+    // Track files for saving to project. This is the authoritative full
+    // file set for the current project (template + AI writes + loads).
     const projectFilesRef = useRef<Record<string, string>>({});
+    // Files explicitly deleted (so they don't resurrect on merge-save)
+    const deletedFilesRef = useRef<Set<string>>(new Set());
+    // Whether any files changed since the last version snapshot
+    const filesChangedRef = useRef(false);
 
-    // Dynamic body for API request - include selected model mode
-    const chatBody = useMemo(() => ({
-        userTier: profile?.tier || "free",
-        modelMode: modelMode,
-    }), [profile?.tier, modelMode]);
+    // Ref so request-body preparation always sees the latest value
+    const modelModeRef = useRef<ModelMode>(modelMode);
+    modelModeRef.current = modelMode;
+
+    // Compact project context (file tree) sent with each request
+    const buildProjectContext = useCallback((): string => {
+        const paths = Object.keys(projectFilesRef.current);
+        if (paths.length === 0) return "";
+        return `Files in the project:\n${paths.sort().map(p => `- ${p}`).join("\n")}`;
+    }, []);
 
     const chatHelpers = useChat({
         api: "/api/chat",
-        maxSteps: 10,
-        body: chatBody,
+        maxSteps: 30,
+        experimental_prepareRequestBody: ({ messages }) => ({
+            messages,
+            modelMode: modelModeRef.current,
+            projectContext: buildProjectContext(),
+        }) as any,
+        // Execute AI tool calls against the WebContainer. Returning a value
+        // records it as the tool result and (with maxSteps) lets the model
+        // continue automatically.
+        onToolCall: async ({ toolCall }) => {
+            const { toolName, args } = toolCall as { toolName: string; args: any };
+            try {
+                console.log(`Executing tool: ${toolName}`, args);
+
+                if (toolName === "createFile" || toolName === "updateFile") {
+                    await writeFile(args.path, args.content);
+                    projectFilesRef.current[args.path] = args.content;
+                    deletedFilesRef.current.delete(args.path);
+                    filesChangedRef.current = true;
+                    saveFilesToProjectRef.current();
+                    return `${toolName === "createFile" ? "Created" : "Updated"} file: ${args.path}`;
+                }
+
+                if (toolName === "deleteFile") {
+                    try {
+                        await deleteFile(args.path);
+                    } catch {
+                        // File may not exist in container; still remove from tracking
+                    }
+                    delete projectFilesRef.current[args.path];
+                    deletedFilesRef.current.add(args.path);
+                    filesChangedRef.current = true;
+                    saveFilesToProjectRef.current();
+                    return `Deleted file: ${args.path}`;
+                }
+
+                if (toolName === "readFile") {
+                    const content = await readFile(args.path);
+                    return content.length > 30000
+                        ? content.slice(0, 30000) + "\n... [truncated]"
+                        : content;
+                }
+
+                if (toolName === "listFiles") {
+                    const files = await listFiles();
+                    return files.join("\n") || "(no files)";
+                }
+
+                if (toolName === "runCommand") {
+                    const { exitCode, output } = await runShellCommand(args.command);
+                    const tail = output.length > 2000 ? "...\n" + output.slice(-2000) : output;
+                    return exitCode === 0
+                        ? `Command succeeded (exit 0):\n${tail}`
+                        : `Command FAILED (exit ${exitCode}):\n${tail}`;
+                }
+
+                return `Unknown tool: ${toolName}`;
+            } catch (err) {
+                console.error(`Error executing ${toolName}:`, err);
+                return `Error: ${err instanceof Error ? err.message : "Unknown error"}`;
+            }
+        },
         onError: (error) => {
             console.error("Chat error:", error);
             // Parse error message for user-friendly display
             let errorMessage = "Something went wrong. Please try again.";
-            if (error.message.includes("rate limit")) {
+            if (error.message.includes("Not authenticated")) {
+                errorMessage = "Your session has expired. Please sign in again.";
+            } else if (error.message.includes("credit")) {
+                errorMessage = "You've run out of daily credits. They reset tomorrow.";
+            } else if (error.message.includes("rate limit")) {
                 errorMessage = "Rate limit reached. Please wait a moment and try again.";
             } else if (error.message.includes("network") || error.message.includes("fetch")) {
                 errorMessage = "Network error. Please check your connection and try again.";
             } else if (error.message.includes("timeout")) {
                 errorMessage = "Request timed out. Please try again.";
-            } else if (error.message.includes("credit")) {
-                errorMessage = "You've run out of credits. Please upgrade your plan.";
             }
             setError({ message: errorMessage, retryContent: lastMessageRef.current });
         },
         onFinish: () => {
             console.log("Chat finished");
             setError(null); // Clear any error on success
+            // Update the credit counter (credits are deducted server-side)
+            refreshProfile();
         },
     });
 
@@ -116,9 +194,9 @@ export function ChatInterface() {
     const wasLoadingRef = useRef(false);
     const devServerStartedRef = useRef(false);
 
-    // Auto-start dev server when chat finishes and files were created
+    // When chat finishes: auto-start dev server (first generation) and
+    // snapshot a project version if files changed
     useEffect(() => {
-        // Detect when isLoading transitions from true to false (chat finished)
         if (wasLoadingRef.current && !isLoading) {
             // Small delay to ensure all file writes are processed
             setTimeout(() => {
@@ -131,25 +209,39 @@ export function ChatInterface() {
                     devServerStartedRef.current = true;
                     startDevServer();
                 }
+
+                // Version snapshot (Phase: history & rollback)
+                if (filesChangedRef.current && currentProject && hasFiles) {
+                    filesChangedRef.current = false;
+                    const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+                    const label = typeof lastUserMsg?.content === "string"
+                        ? lastUserMsg.content.slice(0, 80)
+                        : "AI edit";
+                    createProjectVersion(currentProject.id, { ...projectFilesRef.current }, label)
+                        .catch(err => console.error("Failed to snapshot version:", err));
+                }
             }, 500);
         }
         wasLoadingRef.current = isLoading;
-    }, [isLoading, serverStatus, startDevServer]);
+    }, [isLoading, serverStatus, startDevServer, currentProject, messages]);
+
+    // Consume "Fix with AI" requests from the Preview panel
+    useEffect(() => {
+        if (fixRequest && !isLoading) {
+            const errorText = fixRequest;
+            setFixRequest(null);
+            lastMessageRef.current = "Fix the build error";
+            append({
+                role: "user",
+                content: `The app has a build/runtime error. Here is the dev server output:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nFind the root cause and fix it.`,
+            });
+        }
+    }, [fixRequest, isLoading, append, setFixRequest]);
 
     // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-
-    // Generate a unique color from a string (deterministic hash)
-    const stringToHsl = (str: string, saturation = 70, lightness = 50): string => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const hue = Math.abs(hash) % 360;
-        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    };
 
     // Generate a thumbnail for the project using canvas - unique subtle gradient per project
     const generateThumbnail = useCallback((projectName: string, _projectDescription?: string): string => {
@@ -188,8 +280,7 @@ export function ChatInterface() {
     const saveFilesToProject = useCallback(() => {
         if (!currentProject) return;
 
-        const files = projectFilesRef.current;
-        if (Object.keys(files).length === 0) return;
+        if (Object.keys(projectFilesRef.current).length === 0) return;
 
         // Clear existing timeout
         if (fileSaveTimeoutRef.current) {
@@ -198,13 +289,17 @@ export function ChatInterface() {
 
         // Debounce to batch file saves
         fileSaveTimeoutRef.current = setTimeout(() => {
-            console.log("Saving files to project:", Object.keys(files));
-
-            // Merge with existing files
-            const mergedFiles = {
+            // Merge with any files saved outside the chat (e.g. manual editor
+            // saves), then drop explicitly deleted paths
+            const mergedFiles: Record<string, string> = {
                 ...(currentProject.files || {}),
-                ...files,
+                ...projectFilesRef.current,
             };
+            for (const deleted of deletedFilesRef.current) {
+                delete mergedFiles[deleted];
+            }
+
+            console.log("Saving files to project:", Object.keys(mergedFiles).length);
 
             // Generate thumbnail if not already set
             const thumbnail = currentProject.thumbnail || generateThumbnail(currentProject.name, currentProject.description);
@@ -213,103 +308,14 @@ export function ChatInterface() {
         }, 1500);
     }, [currentProject, saveProject, generateThumbnail]);
 
-    // Process and execute tool calls, then UPDATE the messages with results
-    useEffect(() => {
-        const processToolCalls = async () => {
-            let hasUpdates = false;
-            const updatedMessages = [...messages];
-            const newFiles: Record<string, string> = {};
-
-            for (let msgIdx = 0; msgIdx < updatedMessages.length; msgIdx++) {
-                const message = updatedMessages[msgIdx];
-                if (!message.toolInvocations) continue;
-
-                const updatedInvocations = [...(message.toolInvocations as any[])];
-
-                for (let toolIdx = 0; toolIdx < updatedInvocations.length; toolIdx++) {
-                    const toolInvocation = updatedInvocations[toolIdx];
-
-                    // Skip if already processed or already has result
-                    if (processedToolCalls.current.has(toolInvocation.toolCallId)) continue;
-                    if (toolInvocation.state === 'result') continue;
-                    if (toolInvocation.state !== 'call') continue;
-
-                    processedToolCalls.current.add(toolInvocation.toolCallId);
-                    const { toolName, args, toolCallId } = toolInvocation;
-                    let result = "";
-
-                    try {
-                        console.log(`Executing tool: ${toolName}`, args);
-
-                        if (toolName === "createFile") {
-                            await writeFile(args.path, args.content);
-                            result = `Created file: ${args.path}`;
-                            console.log(result);
-                            // Track file for saving
-                            newFiles[args.path] = args.content;
-                        } else if (toolName === "updateFile") {
-                            await writeFile(args.path, args.content);
-                            result = `Updated file: ${args.path}`;
-                            console.log(result);
-                            // Track file for saving
-                            newFiles[args.path] = args.content;
-                        } else if (toolName === "deleteFile") {
-                            result = `Deleted file: ${args.path}`;
-                            console.log(result);
-                            // Remove from tracked files
-                            delete projectFilesRef.current[args.path];
-                        } else if (toolName === "runCommand") {
-                            const [cmd, ...cmdArgs] = args.command.split(" ");
-                            await runCommand(cmd, cmdArgs);
-                            result = `Executed: ${args.command}`;
-                            console.log(result);
-                        }
-                    } catch (error) {
-                        console.error(`Error executing ${toolName}:`, error);
-                        result = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-                    }
-
-                    // Update the tool invocation with the result
-                    updatedInvocations[toolIdx] = {
-                        ...toolInvocation,
-                        state: 'result',
-                        result: result,
-                    };
-                    hasUpdates = true;
-                }
-
-                // Update the message with modified tool invocations
-                if (hasUpdates) {
-                    updatedMessages[msgIdx] = {
-                        ...message,
-                        toolInvocations: updatedInvocations,
-                    };
-                }
-            }
-
-            // Add new files to ref and trigger save
-            if (Object.keys(newFiles).length > 0) {
-                projectFilesRef.current = {
-                    ...projectFilesRef.current,
-                    ...newFiles,
-                };
-                saveFilesToProject();
-            }
-
-            // Only update state if we made changes
-            if (hasUpdates) {
-                console.log("Updating messages with tool results");
-                setMessages(updatedMessages);
-            }
-        };
-
-        processToolCalls();
-    }, [messages, writeFile, runCommand, setMessages, saveFilesToProject]);
+    // Stable ref so onToolCall (created once) always calls the latest saver
+    const saveFilesToProjectRef = useRef(saveFilesToProject);
+    saveFilesToProjectRef.current = saveFilesToProject;
 
     const clearChat = () => {
         setMessages([]);
-        processedToolCalls.current.clear();
         projectFilesRef.current = {};
+        deletedFilesRef.current = new Set();
     };
 
     // Load chat messages and initialize file ref when project changes
@@ -321,6 +327,7 @@ export function ChatInterface() {
             if (currentProject.files) {
                 projectFilesRef.current = { ...currentProject.files };
             }
+            deletedFilesRef.current = new Set();
 
             // Load chat messages with preprocessed tool states
             if (currentProject.chat_messages && currentProject.chat_messages.length > 0) {
@@ -386,31 +393,53 @@ export function ChatInterface() {
             }
             sessionStorage.removeItem("initialModelMode");
 
-            // Reset WebContainer before starting new project
-            resetContainer().then(() => {
-                // Clear tracked files and refs for new project
+            lastMessageRef.current = initialPrompt;
+
+            // Reset WebContainer, mount the starter template, then prompt
+            resetContainer().then(async () => {
                 projectFilesRef.current = {};
-                processedToolCalls.current = new Set();
+                deletedFilesRef.current = new Set();
                 devServerStartedRef.current = false;
+
+                // Mount the starter template so the AI only writes src/ files
+                try {
+                    for (const [path, content] of Object.entries(TEMPLATE_FILES)) {
+                        await writeFile(path, content);
+                        projectFilesRef.current[path] = content;
+                    }
+                    console.log("Starter template mounted");
+                } catch (err) {
+                    console.error("Failed to mount template:", err);
+                }
 
                 setTimeout(() => {
                     append({ role: "user", content: initialPrompt });
-                }, 500);
+                }, 300);
             });
         }
-    }, [append, resetContainer]);
+    }, [append, resetContainer, writeFile]);
 
     const getToolIcon = (toolName: string) => {
         switch (toolName) {
             case "createFile":
             case "updateFile":
                 return <FileCode className="w-3 h-3" />;
+            case "readFile":
+                return <Eye className="w-3 h-3" />;
+            case "listFiles":
+                return <FolderTree className="w-3 h-3" />;
             case "runCommand":
                 return <Terminal className="w-3 h-3" />;
             default:
                 return <Check className="w-3 h-3" />;
         }
     };
+
+    const examplePrompts = [
+        "A fitness tracking app",
+        "Portfolio website",
+        "E-commerce landing",
+    ];
 
     return (
         <div className="h-full flex flex-col bg-[#0a0a0f]">
@@ -450,9 +479,16 @@ export function ChatInterface() {
 
                             {/* Example prompts */}
                             <div className="flex flex-wrap gap-2 justify-center">
-                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">A fitness tracking app</span>
-                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">Portfolio website</span>
-                                <span className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg">E-commerce landing</span>
+                                {examplePrompts.map((prompt) => (
+                                    <button
+                                        key={prompt}
+                                        type="button"
+                                        onClick={() => setInput(prompt)}
+                                        className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg hover:border-indigo-500/50 hover:text-white transition-colors"
+                                    >
+                                        {prompt}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -613,6 +649,7 @@ export function ChatInterface() {
             {/* Action Chips */}
             <ActionChips
                 onAction={(prompt) => {
+                    lastMessageRef.current = prompt;
                     append({ role: "user", content: prompt });
                 }}
                 disabled={isLoading}
@@ -643,7 +680,7 @@ export function ChatInterface() {
                 )}
 
                 {/* Model Selector */}
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
                     {/* Plan mode - separate */}
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500">Mode:</span>
@@ -791,16 +828,12 @@ export function ChatInterface() {
                             >
                                 Maybe later
                             </button>
-                            <button
-                                onClick={() => {
-                                    // TODO: Implement Stripe checkout
-                                    setShowUpgradeModal(false);
-                                    alert("Stripe integration coming soon!");
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-colors"
+                            <a
+                                href="/pricing"
+                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-colors text-center"
                             >
-                                Upgrade Now
-                            </button>
+                                View Plans
+                            </a>
                         </div>
                     </div>
                 </div>

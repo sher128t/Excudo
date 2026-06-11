@@ -8,7 +8,8 @@ create extension if not exists "uuid-ossp";
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
-  tier text default 'free' check (tier in ('free', 'pro', 'enterprise', 'admin')),
+  full_name text,
+  tier text default 'free' check (tier in ('free', 'starter', 'pro', 'teams', 'admin')),
   credits_limit int default 5,
   credits_used_today int default 0,
   last_credit_reset timestamptz default now(),
@@ -26,9 +27,22 @@ create table projects (
   files jsonb default '{}',
   chat_messages jsonb default '[]',
   thumbnail text,  -- Base64 screenshot of preview
+  netlify_site_id text,  -- Netlify site for one-click deploy
+  deploy_url text,       -- Last successful deploy URL
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Version history snapshots (for rollback)
+create table project_versions (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references projects(id) on delete cascade,
+  files jsonb not null default '{}',
+  label text,
+  created_at timestamptz default now()
+);
+
+create index project_versions_project_id_idx on project_versions(project_id, created_at desc);
 
 -- Create chats table
 create table chats (
@@ -42,6 +56,38 @@ create table chats (
 alter table profiles enable row level security;
 alter table projects enable row level security;
 alter table chats enable row level security;
+alter table project_versions enable row level security;
+
+-- Project versions policies
+create policy "Users can view own project versions"
+  on project_versions for select
+  using (
+    exists (
+      select 1 from projects
+      where projects.id = project_versions.project_id
+      and projects.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can create project versions"
+  on project_versions for insert
+  with check (
+    exists (
+      select 1 from projects
+      where projects.id = project_versions.project_id
+      and projects.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can delete own project versions"
+  on project_versions for delete
+  using (
+    exists (
+      select 1 from projects
+      where projects.id = project_versions.project_id
+      and projects.user_id = auth.uid()
+    )
+  );
 
 -- Profiles policies
 create policy "Users can view own profile"
@@ -108,3 +154,14 @@ create trigger on_auth_user_created
 -- IMPORTANT: Create your admin account manually after signing up!
 -- Run this AFTER you sign up with your email:
 -- UPDATE profiles SET tier = 'admin', credits_limit = 999999 WHERE email = 'YOUR_EMAIL@example.com';
+
+-- ============================================================
+-- MIGRATION for EXISTING databases (run only if you created the
+-- schema before these columns/tables existed):
+-- ============================================================
+-- alter table profiles add column if not exists full_name text;
+-- alter table profiles drop constraint if exists profiles_tier_check;
+-- alter table profiles add constraint profiles_tier_check check (tier in ('free', 'starter', 'pro', 'teams', 'admin'));
+-- alter table projects add column if not exists netlify_site_id text;
+-- alter table projects add column if not exists deploy_url text;
+-- (then create the project_versions table, index, RLS and policies above)

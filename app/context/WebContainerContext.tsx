@@ -11,6 +11,11 @@ import { WebContainer } from "@webcontainer/api";
 
 export type ServerStatus = "idle" | "writing-files" | "installing" | "starting" | "ready" | "error";
 
+export interface CommandResult {
+    exitCode: number;
+    output: string;
+}
+
 interface WebContainerContextType {
     webcontainer: WebContainer | null;
     isLoading: boolean;
@@ -18,9 +23,14 @@ interface WebContainerContextType {
     serverUrl: string | null;
     serverStatus: ServerStatus;
     serverStatusMessage: string;
+    buildError: string | null;
+    clearBuildError: () => void;
     writeFile: (path: string, content: string) => Promise<void>;
     readFile: (path: string) => Promise<string>;
+    deleteFile: (path: string) => Promise<void>;
+    listFiles: () => Promise<string[]>;
     runCommand: (cmd: string, args: string[]) => Promise<number>;
+    runShellCommand: (command: string) => Promise<CommandResult>;
     registerTerminal: (writer: (data: string) => void) => void;
     loadProjectFiles: (files: Record<string, string>) => Promise<void>;
     startDevServer: () => Promise<void>;
@@ -29,6 +39,34 @@ interface WebContainerContextType {
 
 const WebContainerContext = createContext<WebContainerContextType | null>(null);
 
+// Directories that should never be listed or persisted
+const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".cache", ".npm"]);
+
+// Strip ANSI escape codes so captured errors are readable
+function stripAnsi(text: string): string {
+    // eslint-disable-next-line no-control-regex
+    return text.replace(/\u001b\[[0-9;?]*[a-zA-Z]/g, "").replace(/\u001b\][^\u0007]*\u0007/g, "");
+}
+
+const ERROR_PATTERNS = [
+    /Failed to resolve import/i,
+    /Internal server error/i,
+    /\[plugin:vite/i,
+    /Pre-transform error/i,
+    /SyntaxError/,
+    /ReferenceError/,
+    /Cannot find module/i,
+    /Module not found/i,
+    /Unexpected token/i,
+    /ERROR:/,
+];
+
+const ERROR_CLEAR_PATTERNS = [
+    /hmr update/i,
+    /page reload/i,
+    /ready in/i,
+];
+
 export function WebContainerProvider({ children }: { children: ReactNode }) {
     const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -36,8 +74,11 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
     const [serverUrl, setServerUrl] = useState<string | null>(null);
     const [serverStatus, setServerStatus] = useState<ServerStatus>("idle");
     const [serverStatusMessage, setServerStatusMessage] = useState("");
+    const [buildError, setBuildError] = useState<string | null>(null);
     const booted = useRef(false);
     const terminalWriter = useRef<((data: string) => void) | null>(null);
+    // Rolling buffer of recent dev-server output, used to give error context to the AI
+    const outputBufferRef = useRef<string>("");
 
     useEffect(() => {
         async function boot() {
@@ -67,6 +108,24 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         boot();
     }, []);
 
+    const clearBuildError = useCallback(() => setBuildError(null), []);
+
+    // Inspect dev-server output for build/runtime errors so the AI can fix them
+    const inspectOutput = useCallback((data: string) => {
+        const clean = stripAnsi(data);
+        outputBufferRef.current = (outputBufferRef.current + clean).slice(-6000);
+
+        if (ERROR_CLEAR_PATTERNS.some((p) => p.test(clean))) {
+            setBuildError(null);
+            return;
+        }
+        if (ERROR_PATTERNS.some((p) => p.test(clean))) {
+            // Capture the recent output tail as error context
+            const context = outputBufferRef.current.slice(-2500).trim();
+            setBuildError(context);
+        }
+    }, []);
+
     const writeFile = async (path: string, content: string) => {
         if (!webcontainer) throw new Error("WebContainer not booted");
 
@@ -90,6 +149,33 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         return content;
     };
 
+    const deleteFile = async (path: string) => {
+        if (!webcontainer) throw new Error("WebContainer not booted");
+        await webcontainer.fs.rm(path, { recursive: true });
+    };
+
+    // Recursively list all project files (excluding node_modules etc.)
+    const listFiles = useCallback(async (): Promise<string[]> => {
+        if (!webcontainer) throw new Error("WebContainer not booted");
+
+        const results: string[] = [];
+        const walk = async (dir: string) => {
+            const entries = await webcontainer.fs.readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                if (IGNORED_DIRS.has(entry.name) || entry.name.startsWith(".")) continue;
+                const fullPath = dir === "/" ? `/${entry.name}` : `${dir}/${entry.name}`;
+                if (entry.isDirectory()) {
+                    await walk(fullPath);
+                } else {
+                    results.push(fullPath.replace(/^\//, ""));
+                }
+            }
+        };
+
+        await walk("/");
+        return results.sort();
+    }, [webcontainer]);
+
     const runCommand = async (cmd: string, args: string[]): Promise<number> => {
         if (!webcontainer) throw new Error("WebContainer not booted");
 
@@ -109,6 +195,28 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
 
         return await process.exit;
     };
+
+    // Run a full shell command (supports &&, pipes, quotes) and capture output
+    const runShellCommand = useCallback(async (command: string): Promise<CommandResult> => {
+        if (!webcontainer) throw new Error("WebContainer not booted");
+
+        terminalWriter.current?.(`> ${command}\r\n`);
+
+        const process = await webcontainer.spawn("jsh", ["-c", command]);
+
+        let output = "";
+        process.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    output += data;
+                    terminalWriter.current?.(data);
+                },
+            })
+        );
+
+        const exitCode = await process.exit;
+        return { exitCode, output: stripAnsi(output) };
+    }, [webcontainer]);
 
     const registerTerminal = (writer: (data: string) => void) => {
         terminalWriter.current = writer;
@@ -174,6 +282,8 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
             // Start dev server
             setServerStatus("starting");
             setServerStatusMessage("Starting dev server...");
+            setBuildError(null);
+            outputBufferRef.current = "";
 
             // Don't await - server runs indefinitely
             const process = await webcontainer.spawn("npm", ["run", "dev"]);
@@ -183,6 +293,7 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                     write(data) {
                         console.log("[dev]", data);
                         terminalWriter.current?.(data);
+                        inspectOutput(data);
                     },
                 })
             );
@@ -192,7 +303,7 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
             setServerStatus("error");
             setServerStatusMessage("Failed to start server");
         }
-    }, [webcontainer, runCommand]);
+    }, [webcontainer, runCommand, inspectOutput]);
 
     // Reset container - clear all files and reset state for new project
     const resetContainer = useCallback(async () => {
@@ -202,6 +313,8 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         setServerUrl(null);
         setServerStatus("idle");
         setServerStatusMessage("");
+        setBuildError(null);
+        outputBufferRef.current = "";
 
         try {
             // Get list of all files/folders in root
@@ -231,9 +344,14 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                 serverUrl,
                 serverStatus,
                 serverStatusMessage,
+                buildError,
+                clearBuildError,
                 writeFile,
                 readFile,
+                deleteFile,
+                listFiles,
                 runCommand,
+                runShellCommand,
                 registerTerminal,
                 loadProjectFiles,
                 startDevServer,

@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import {
     Hammer, Settings, ChevronDown, Code, Terminal as TerminalIcon,
-    BarChart3, Cloud, Palette, Shield, Zap, Share2,
-    Maximize2, Minimize2, Eye, EyeOff, Home, Trash2, AlertTriangle,
-    Download, Check, X, Loader2
+    Eye, Home, AlertTriangle,
+    Download, Check, X, Loader2, History, Rocket
 } from "lucide-react";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { UserMenu } from "./UserMenu";
+import { VersionHistory } from "./VersionHistory";
+import { DeployModal } from "./DeployModal";
 import { useProject } from "~/context/ProjectContext";
 import { exportProjectAsZip } from "~/lib/export";
 
@@ -140,6 +141,8 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
     const { currentProject, deleteProjectById } = useProject();
     const navigate = useNavigate();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showDeployModal, setShowDeployModal] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -218,7 +221,6 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                         items={[
                             { label: "View Source Code", action: () => onTabChange("code") },
                             { label: isExporting ? "Exporting..." : "Download ZIP", action: handleExport, loading: isExporting },
-                            { label: "Export to GitHub", disabled: true },
                         ]}
                     />
                     <div className="w-px h-4 bg-[#1e1e2e]" />
@@ -227,17 +229,6 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                         icon={<TerminalIcon className="w-4 h-4" />}
                         items={[
                             { label: "Open Terminal", action: () => onTabChange("terminal") },
-                            { label: "Run Command", disabled: true },
-                        ]}
-                    />
-                    <div className="w-px h-4 bg-[#1e1e2e]" />
-                    <Dropdown
-                        label="Design"
-                        icon={<Palette className="w-4 h-4" />}
-                        items={[
-                            { label: "Change Theme", disabled: true },
-                            { label: "Edit Colors", disabled: true },
-                            { label: "Typography", disabled: true },
                         ]}
                     />
                     <div className="w-px h-4 bg-[#1e1e2e]" />
@@ -245,7 +236,7 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                         label="Project"
                         icon={<Settings className="w-4 h-4" />}
                         items={[
-                            { label: "Project Settings", disabled: true },
+                            { label: "Version History", action: () => setShowHistoryModal(true) },
                             { label: "Delete Project", action: () => setShowDeleteModal(true), danger: true },
                         ]}
                     />
@@ -254,6 +245,15 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                 {/* Right - Actions */}
                 <div className="flex items-center gap-3">
                     <CreditsDisplay />
+                    {/* Version History */}
+                    <button
+                        onClick={() => setShowHistoryModal(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
+                        title="Version history"
+                    >
+                        <History className="w-4 h-4" />
+                        <span className="hidden lg:inline">History</span>
+                    </button>
                     {/* Quick Export Button */}
                     <button
                         onClick={handleExport}
@@ -263,9 +263,13 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                         {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                         <span className="hidden lg:inline">Export</span>
                     </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 rounded-lg text-sm text-gray-400 hover:text-white transition-colors">
-                        <Share2 className="w-4 h-4" />
-                        <span className="hidden lg:inline">Share</span>
+                    {/* Publish */}
+                    <button
+                        onClick={() => setShowDeployModal(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-purple-500/20"
+                    >
+                        <Rocket className="w-4 h-4" />
+                        <span className="hidden lg:inline">Publish</span>
                     </button>
                     <UserMenu />
                 </div>
@@ -277,6 +281,19 @@ export function Header({ activeTab, onTabChange, showPreview, onTogglePreview }:
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={handleDelete}
                 projectName={currentProject?.name || "this project"}
+            />
+
+            {/* Version History Modal */}
+            <VersionHistory
+                isOpen={showHistoryModal}
+                onClose={() => setShowHistoryModal(false)}
+                onRestored={() => setToast({ message: "Version restored", type: "success" })}
+            />
+
+            {/* Deploy Modal */}
+            <DeployModal
+                isOpen={showDeployModal}
+                onClose={() => setShowDeployModal(false)}
             />
 
             {/* Toast notification */}

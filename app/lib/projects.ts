@@ -1,5 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-import type { Project } from "~/lib/types";
+import type { Project, ProjectVersion } from "~/lib/types";
 
 // Get client-side Supabase client
 function getClient() {
@@ -121,6 +121,95 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 
     if (error) {
         console.error("Error deleting project:", error);
+        return false;
+    }
+
+    return true;
+}
+
+// ---- Version history ----
+
+const MAX_VERSIONS_PER_PROJECT = 30;
+
+// Snapshot the current files as a new version
+export async function createProjectVersion(
+    projectId: string,
+    files: Record<string, string>,
+    label?: string
+): Promise<boolean> {
+    const supabase = getClient();
+
+    const { error } = await supabase
+        .from("project_versions")
+        .insert({ project_id: projectId, files, label: label || null });
+
+    if (error) {
+        console.error("Error creating project version:", error);
+        return false;
+    }
+
+    // Prune old versions beyond the cap (best-effort)
+    const { data: versions } = await supabase
+        .from("project_versions")
+        .select("id")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+    if (versions && versions.length > MAX_VERSIONS_PER_PROJECT) {
+        const toDelete = versions.slice(MAX_VERSIONS_PER_PROJECT).map(v => v.id);
+        await supabase.from("project_versions").delete().in("id", toDelete);
+    }
+
+    return true;
+}
+
+// List versions for a project (newest first, without file payloads)
+export async function getProjectVersions(projectId: string): Promise<ProjectVersion[]> {
+    const supabase = getClient();
+
+    const { data, error } = await supabase
+        .from("project_versions")
+        .select("id, project_id, label, created_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error fetching project versions:", error);
+        return [];
+    }
+
+    return (data || []) as ProjectVersion[];
+}
+
+// Get a single version including its files
+export async function getProjectVersion(versionId: string): Promise<ProjectVersion | null> {
+    const supabase = getClient();
+
+    const { data, error } = await supabase
+        .from("project_versions")
+        .select("*")
+        .eq("id", versionId)
+        .single();
+
+    if (error) {
+        console.error("Error fetching project version:", error);
+        return null;
+    }
+
+    return data as ProjectVersion;
+}
+
+// Save deploy info after a successful publish
+export async function saveDeployInfo(projectId: string, netlifySiteId: string, deployUrl: string): Promise<boolean> {
+    const supabase = getClient();
+
+    const { error } = await supabase
+        .from("projects")
+        .update({ netlify_site_id: netlifySiteId, deploy_url: deployUrl, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+
+    if (error) {
+        console.error("Error saving deploy info:", error);
         return false;
     }
 

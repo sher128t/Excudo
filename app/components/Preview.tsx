@@ -1,11 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useSetAtom } from "jotai";
 import { useWebContainer } from "~/context/WebContainerContext";
-import { Play, RefreshCw, ExternalLink, Copy, Check, Monitor, Loader2, Package, Rocket, AlertCircle } from "lucide-react";
+import { fixRequestAtom } from "~/store/atoms";
+import { Play, RefreshCw, Copy, Check, Monitor, Loader2, Package, Rocket, AlertCircle, Wrench, X } from "lucide-react";
 
 export function Preview() {
-    const { serverUrl, serverStatus, serverStatusMessage, startDevServer, webcontainer } = useWebContainer();
+    const { serverUrl, serverStatus, serverStatusMessage, startDevServer, webcontainer, buildError, clearBuildError } = useWebContainer();
+    const setFixRequest = useSetAtom(fixRequestAtom);
     const [copied, setCopied] = useState(false);
     const [iframeKey, setIframeKey] = useState(0);
+
+    const handleFixWithAI = () => {
+        if (buildError) {
+            setFixRequest(buildError);
+            clearBuildError();
+        }
+    };
 
     const copyUrl = async () => {
         if (serverUrl) {
@@ -99,6 +109,37 @@ export function Preview() {
                     )}
                 </div>
             </div>
+
+            {/* Build error banner with AI fix (like Bolt/Lovable) */}
+            {buildError && (
+                <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-red-400 mb-1">Build error detected</p>
+                            <pre className="text-xs text-red-300/70 max-h-24 overflow-y-auto whitespace-pre-wrap break-all">
+                                {buildError.slice(-600)}
+                            </pre>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                                onClick={handleFixWithAI}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg text-xs font-medium text-white transition-all"
+                            >
+                                <Wrench className="w-3.5 h-3.5" />
+                                Fix with AI
+                            </button>
+                            <button
+                                onClick={clearBuildError}
+                                className="p-1.5 hover:bg-white/5 rounded transition-colors"
+                                title="Dismiss"
+                            >
+                                <X className="w-4 h-4 text-gray-400" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Preview Area */}
             {serverUrl ? (

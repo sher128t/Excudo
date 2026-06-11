@@ -37,8 +37,9 @@ export function UserMenu() {
 
     const tierColors: Record<string, string> = {
         free: "text-gray-400",
+        starter: "text-emerald-400",
         pro: "text-indigo-400",
-        enterprise: "text-purple-400",
+        teams: "text-purple-400",
         admin: "text-yellow-400",
     };
 
@@ -67,12 +68,12 @@ export function UserMenu() {
                         <button
                             onClick={() => {
                                 setIsOpen(false);
-                                // Could navigate to settings
+                                navigate("/pricing");
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                         >
                             <Settings className="w-4 h-4" />
-                            Settings
+                            Plans & Pricing
                         </button>
                         <button
                             onClick={handleSignOut}

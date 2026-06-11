@@ -10,7 +10,7 @@ export function CodeEditor() {
     const [selectedFile, setSelectedFile] = useAtom(selectedFileAtom);
     const [fileContent, setFileContent] = useAtom(fileContentAtom);
     const { readFile, writeFile } = useWebContainer();
-    const { currentProject } = useProject();
+    const { currentProject, saveProject } = useProject();
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [originalContent, setOriginalContent] = useState("");
@@ -59,6 +59,15 @@ export function CodeEditor() {
         setError(null);
         try {
             await writeFile(selectedFile, fileContent);
+            // Persist to Supabase so manual edits survive reloads
+            if (currentProject) {
+                await saveProject({
+                    files: {
+                        ...(currentProject.files || {}),
+                        [selectedFile]: fileContent,
+                    },
+                });
+            }
             setOriginalContent(fileContent);
             setHasChanges(false);
             console.log(`Saved: ${selectedFile}`);
@@ -68,7 +77,7 @@ export function CodeEditor() {
         } finally {
             setIsSaving(false);
         }
-    }, [selectedFile, fileContent, writeFile]);
+    }, [selectedFile, fileContent, writeFile, currentProject, saveProject]);
 
     // Handle editor mount for keyboard shortcuts
     const handleEditorMount: OnMount = useCallback((editor, monaco) => {

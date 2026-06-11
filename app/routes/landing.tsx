@@ -1,25 +1,40 @@
 import { Link, useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import type { Route } from "./+types/landing";
 import {
-    Hammer, Sparkles, Zap, Shield, ArrowRight, Check, Code, Globe,
-    Layers, Rocket, Star, Users, ChevronRight, Play, Github, Twitter,
-    Cpu, Palette, Lock, Clock, Cloud, Smartphone
+    Hammer, Sparkles, Zap, ArrowRight, Check, Globe,
+    Rocket, Github, Twitter, Cpu, Lock, Menu, X,
+    FileCode, Terminal, History, ChevronDown
 } from "lucide-react";
 
-// Animated floating particles component
+export const meta: Route.MetaFunction = () => [
+    { title: "Excudo - Build apps with AI, right in your browser" },
+    { name: "description", content: "Describe your idea and watch AI build a working React app live in your browser. Edit, iterate, and publish to the web in minutes - no setup required." },
+    { property: "og:title", content: "Excudo - Build apps with AI" },
+    { property: "og:description", content: "Describe your idea and watch AI build a working app live in your browser. Publish to the web in one click." },
+];
+
+// Animated floating particles component (positions memoized so they don't
+// jump on every re-render)
 function FloatingParticles() {
+    const particles = useMemo(
+        () =>
+            Array.from({ length: 50 }, () => ({
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${10 + Math.random() * 20}s`,
+            })),
+        []
+    );
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(50)].map((_, i) => (
+            {particles.map((style, i) => (
                 <div
                     key={i}
                     className="absolute w-1 h-1 bg-white/20 rounded-full animate-float"
-                    style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 5}s`,
-                        animationDuration: `${10 + Math.random() * 20}s`,
-                    }}
+                    style={style}
                 />
             ))}
         </div>
@@ -46,9 +61,115 @@ function GridBackground() {
     );
 }
 
+// Animated "watch it build" product demo mockup
+function BuildDemo() {
+    const steps = [
+        { icon: FileCode, text: "createFile src/components/Hero.jsx" },
+        { icon: FileCode, text: "createFile src/components/Features.jsx" },
+        { icon: FileCode, text: "createFile src/components/Pricing.jsx" },
+        { icon: FileCode, text: "updateFile src/App.jsx" },
+        { icon: Terminal, text: "Dev server running - preview ready" },
+    ];
+
+    return (
+        <div className="relative max-w-5xl mx-auto">
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 rounded-3xl blur-2xl" />
+            <div className="relative bg-[#0a0a15]/95 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl">
+                {/* Window chrome */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                        <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                    </div>
+                    <span className="text-xs text-gray-500 ml-3">excudo.app/editor</span>
+                </div>
+                <div className="grid md:grid-cols-5">
+                    {/* Chat side */}
+                    <div className="md:col-span-2 p-5 border-b md:border-b-0 md:border-r border-white/5 text-left">
+                        <div className="flex justify-end mb-4">
+                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl px-3.5 py-2 text-sm text-white max-w-[90%]">
+                                Build a landing page for my coffee shop
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {steps.map((step, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-2.5 px-3 py-2 bg-white/[0.03] border border-white/5 rounded-lg text-xs text-gray-400 opacity-0 animate-step-in"
+                                    style={{ animationDelay: `${0.6 + i * 0.7}s` }}
+                                >
+                                    <span className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                    </span>
+                                    <step.icon className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                    <span className="truncate font-mono">{step.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {/* Preview side */}
+                    <div className="md:col-span-3 p-5">
+                        <div
+                            className="h-64 md:h-72 rounded-xl overflow-hidden border border-white/10 opacity-0 animate-step-in"
+                            style={{ animationDelay: "4s" }}
+                        >
+                            {/* Mini generated site mock */}
+                            <div className="h-full bg-gradient-to-b from-amber-950 to-stone-950 flex flex-col">
+                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+                                    <div className="w-16 h-2.5 rounded bg-amber-400/80" />
+                                    <div className="flex gap-2">
+                                        <div className="w-8 h-2 rounded bg-white/20" />
+                                        <div className="w-8 h-2 rounded bg-white/20" />
+                                        <div className="w-10 h-4 rounded-full bg-amber-400/80" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6">
+                                    <div className="w-3/4 h-4 rounded bg-white/80" />
+                                    <div className="w-1/2 h-4 rounded bg-white/50" />
+                                    <div className="w-2/3 h-2 rounded bg-white/20 mt-1" />
+                                    <div className="flex gap-2 mt-3">
+                                        <div className="w-20 h-6 rounded-full bg-amber-400/90" />
+                                        <div className="w-20 h-6 rounded-full bg-white/10 border border-white/20" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 px-6 pb-5">
+                                    {[0, 1, 2].map(i => (
+                                        <div key={i} className="h-12 rounded-lg bg-white/5 border border-white/10" />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// FAQ item with expand/collapse
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+    const [open, setOpen] = useState(false);
+    return (
+        <div className="border border-white/10 rounded-2xl bg-white/[0.02] overflow-hidden">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/[0.02] transition-colors"
+            >
+                <span className="font-medium text-white">{question}</span>
+                <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ml-4 ${open ? "rotate-180" : ""}`} />
+            </button>
+            {open && (
+                <div className="px-6 pb-5 text-gray-400 text-sm leading-relaxed">{answer}</div>
+            )}
+        </div>
+    );
+}
+
 export default function Landing() {
     const [prompt, setPrompt] = useState("");
     const [currentWord, setCurrentWord] = useState(0);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
 
     const rotatingWords = ["apps", "websites", "dashboards", "portfolios", "landing pages"];
@@ -66,6 +187,14 @@ export default function Landing() {
         sessionStorage.setItem("landingPrompt", prompt);
         navigate("/auth/signup");
     };
+
+    const navLinks = [
+        { href: "#demo", label: "Demo" },
+        { href: "#features", label: "Features" },
+        { href: "#how-it-works", label: "How it Works" },
+        { href: "#pricing", label: "Pricing" },
+        { href: "#faq", label: "FAQ" },
+    ];
 
     return (
         <div className="min-h-screen bg-[#030308] text-white overflow-x-hidden">
@@ -89,10 +218,9 @@ export default function Landing() {
                         <span className="font-bold text-xl bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Excudo</span>
                     </div>
                     <div className="hidden md:flex items-center gap-8">
-                        <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm">Features</a>
-                        <a href="#how-it-works" className="text-gray-400 hover:text-white transition-colors text-sm">How it Works</a>
-                        <a href="#templates" className="text-gray-400 hover:text-white transition-colors text-sm">Templates</a>
-                        <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm">Pricing</a>
+                        {navLinks.map(link => (
+                            <a key={link.href} href={link.href} className="text-gray-400 hover:text-white transition-colors text-sm">{link.label}</a>
+                        ))}
                     </div>
                     <div className="flex items-center gap-3">
                         <Link to="/auth/login" className="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block">
@@ -104,24 +232,52 @@ export default function Landing() {
                         >
                             Get Started Free
                         </Link>
+                        {/* Mobile menu toggle */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="md:hidden p-2 hover:bg-white/5 rounded-lg transition-colors"
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
                     </div>
                 </div>
+                {/* Mobile nav drawer */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden border-t border-white/5 bg-[#030308]/95 backdrop-blur-2xl px-6 py-4 space-y-1">
+                        {navLinks.map(link => (
+                            <a
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="block px-3 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-sm"
+                            >
+                                {link.label}
+                            </a>
+                        ))}
+                        <Link
+                            to="/auth/login"
+                            className="block px-3 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-sm"
+                        >
+                            Sign In
+                        </Link>
+                    </div>
+                )}
             </header>
 
-            {/* Hero Section - Expanded */}
-            <section className="relative min-h-screen flex items-center justify-center px-6 pt-16">
+            {/* Hero Section */}
+            <section className="relative min-h-screen flex items-center justify-center px-6 pt-24 pb-16">
                 <div className="max-w-5xl mx-auto text-center">
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-white/10 rounded-full text-sm mb-10 backdrop-blur-sm">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-gray-300">Now powered by Claude AI</span>
-                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-300">From idea to live app in minutes</span>
                     </div>
 
                     {/* Headline with rotating words */}
-                    <h1 className="text-6xl md:text-8xl font-bold mb-8 leading-[1.1] tracking-tight">
+                    <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold mb-8 leading-[1.1] tracking-tight">
                         <span className="text-white">Build </span>
-                        <span className="relative inline-block min-w-[280px] md:min-w-[400px]">
+                        <span className="relative inline-block">
                             <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
                                 {rotatingWords[currentWord]}
                             </span>
@@ -135,12 +291,12 @@ export default function Landing() {
                         <span className="text-white font-medium"> No coding required.</span>
                     </p>
 
-                    {/* Prompt Input - Bigger and more prominent */}
+                    {/* Prompt Input */}
                     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto mb-12">
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
-                            <div className="relative bg-[#0a0a15]/90 border border-white/10 rounded-2xl p-2 flex items-center gap-3 backdrop-blur-xl">
-                                <div className="pl-4">
+                            <div className="relative bg-[#0a0a15]/90 border border-white/10 rounded-2xl p-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 backdrop-blur-xl">
+                                <div className="hidden sm:block pl-4">
                                     <Sparkles className="w-5 h-5 text-indigo-400" />
                                 </div>
                                 <input
@@ -148,74 +304,61 @@ export default function Landing() {
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
                                     placeholder="Create a fitness tracking app with workout plans..."
-                                    className="flex-1 bg-transparent py-4 text-lg text-white placeholder-gray-500 focus:outline-none"
+                                    className="flex-1 bg-transparent px-4 sm:px-0 py-4 text-base sm:text-lg text-white placeholder-gray-500 focus:outline-none min-w-0"
                                 />
                                 <button
                                     type="submit"
-                                    className="px-8 py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 rounded-xl font-semibold text-lg flex items-center gap-2 transition-all shadow-lg shadow-purple-500/25"
+                                    className="px-6 sm:px-8 py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 rounded-xl font-semibold text-base sm:text-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/25"
                                 >
                                     <Zap className="w-5 h-5" />
-                                    <span className="hidden sm:inline">Build Now</span>
+                                    <span>Build Now</span>
                                 </button>
                             </div>
                         </div>
-                        <p className="text-gray-500 text-sm mt-4">No credit card required • Free forever tier available</p>
+                        <p className="text-gray-500 text-sm mt-4">No credit card required • Free tier included</p>
                     </form>
 
-                    {/* Social Proof - Enhanced */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="flex -space-x-3">
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 border-2 border-[#030308] flex items-center justify-center text-xs font-bold" />
-                                ))}
-                            </div>
-                            <div className="text-left">
-                                <p className="text-white font-semibold">2,500+</p>
-                                <p className="text-gray-500">Active builders</p>
-                            </div>
-                        </div>
-                        <div className="hidden sm:block w-px h-12 bg-white/10" />
-                        <div className="flex items-center gap-2">
-                            <div className="flex gap-0.5">
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                                ))}
-                            </div>
-                            <div className="text-left">
-                                <p className="text-white font-semibold">4.9/5</p>
-                                <p className="text-gray-500">From 500+ reviews</p>
-                            </div>
-                        </div>
-                        <div className="hidden sm:block w-px h-12 bg-white/10" />
-                        <div className="text-left">
-                            <p className="text-white font-semibold">10,000+</p>
-                            <p className="text-gray-500">Apps created</p>
-                        </div>
+                    {/* Honest product highlights instead of fabricated stats */}
+                    <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-400">
+                        <span className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Powered by Claude AI</span>
+                        <span className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Runs entirely in your browser</span>
+                        <span className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Export or publish anytime</span>
                     </div>
                 </div>
 
                 {/* Scroll indicator */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden sm:block">
                     <div className="w-6 h-10 border-2 border-white/20 rounded-full flex items-start justify-center p-2">
                         <div className="w-1 h-2 bg-white/40 rounded-full animate-scroll" />
                     </div>
                 </div>
             </section>
 
+            {/* Product Demo */}
+            <section id="demo" className="py-24 px-6 relative">
+                <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-14">
+                        <span className="text-indigo-400 font-medium text-sm uppercase tracking-wider">See it in action</span>
+                        <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Watch your idea become an app</h2>
+                        <p className="text-gray-400 max-w-xl mx-auto text-lg">Type a prompt, watch the AI create every file, and see your app running live - all in one screen.</p>
+                    </div>
+                    <BuildDemo />
+                </div>
+            </section>
+
             {/* Tech Logos Bar */}
             <section className="py-12 px-6 border-t border-white/5">
                 <div className="max-w-6xl mx-auto">
-                    <p className="text-center text-gray-500 text-sm mb-8">Built with modern technologies you trust</p>
-                    <div className="flex flex-wrap items-center justify-center gap-12 opacity-50">
-                        {["React", "Tailwind", "Vite", "TypeScript", "Node.js"].map((tech) => (
+                    <p className="text-center text-gray-500 text-sm mb-8">Apps are built on a modern, portable stack</p>
+                    <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-50">
+                        {["React", "Tailwind", "Vite", "Node.js", "Netlify"].map((tech) => (
                             <span key={tech} className="text-lg font-semibold text-gray-400">{tech}</span>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Features Grid - Enhanced */}
+            {/* Features Grid */}
             <section id="features" className="py-32 px-6 relative">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-20">
@@ -226,11 +369,11 @@ export default function Landing() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
                             { icon: Sparkles, title: "AI-Powered Generation", desc: "Describe your app in plain English. Claude understands context and builds exactly what you need.", color: "from-indigo-500 to-purple-500" },
-                            { icon: Zap, title: "Real-Time Preview", desc: "See changes instantly as the AI writes code. No refreshing, no waiting.", color: "from-yellow-500 to-orange-500" },
-                            { icon: Code, title: "Production-Ready Code", desc: "Clean React + Tailwind code you can export, customize, and deploy anywhere.", color: "from-green-500 to-emerald-500" },
-                            { icon: Layers, title: "Component Library", desc: "Modern UI components with smooth animations and delightful interactions.", color: "from-pink-500 to-rose-500" },
-                            { icon: Globe, title: "One-Click Deploy", desc: "Deploy to your own domain with Vercel, Netlify, or any hosting provider.", color: "from-blue-500 to-cyan-500" },
-                            { icon: Lock, title: "Secure & Private", desc: "Your projects are private by default. Export your code anytime, no lock-in.", color: "from-purple-500 to-pink-500" },
+                            { icon: Zap, title: "Real-Time Preview", desc: "See changes instantly as the AI writes code. The app runs live in your browser as it's built.", color: "from-yellow-500 to-orange-500" },
+                            { icon: Cpu, title: "AI Error Fixing", desc: "Build errors are detected automatically. One click and the AI finds the root cause and fixes it.", color: "from-red-500 to-orange-500" },
+                            { icon: History, title: "Version History", desc: "Every AI edit is snapshotted. Roll back to any previous version of your project instantly.", color: "from-pink-500 to-rose-500" },
+                            { icon: Globe, title: "One-Click Publish", desc: "Publish your app to a live URL in seconds, straight from the editor. Share it with anyone.", color: "from-blue-500 to-cyan-500" },
+                            { icon: Lock, title: "Your Code, No Lock-In", desc: "Projects are private by default. Download clean React + Tailwind code as a ZIP anytime.", color: "from-purple-500 to-pink-500" },
                         ].map((feature, i) => (
                             <div key={i} className="group p-8 bg-gradient-to-br from-white/5 to-transparent border border-white/5 rounded-3xl hover:border-white/20 transition-all duration-500 hover:-translate-y-1">
                                 <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
@@ -244,7 +387,7 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* How It Works - Enhanced */}
+            {/* How It Works */}
             <section id="how-it-works" className="py-32 px-6 relative">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-20">
@@ -259,7 +402,7 @@ export default function Landing() {
                         {[
                             { step: "01", title: "Describe Your Vision", desc: "Tell Excudo what you want to build in plain English. Be as detailed or simple as you like.", icon: Sparkles },
                             { step: "02", title: "Watch AI Build", desc: "AI generates your app in real-time. See files created and preview updates instantly.", icon: Cpu },
-                            { step: "03", title: "Iterate & Deploy", desc: "Refine with follow-up prompts. Export code or deploy with one click when ready.", icon: Rocket },
+                            { step: "03", title: "Iterate & Publish", desc: "Refine with follow-up prompts. Publish to a live URL or export the code when ready.", icon: Rocket },
                         ].map((item, i) => (
                             <div key={i} className="relative text-center">
                                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
@@ -274,7 +417,7 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* Template Gallery - Enhanced */}
+            {/* Template Gallery */}
             <section id="templates" className="py-32 px-6 relative">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-20">
@@ -315,7 +458,7 @@ export default function Landing() {
                     <div className="text-center mb-20">
                         <span className="text-indigo-400 font-medium text-sm uppercase tracking-wider">Pricing</span>
                         <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Simple, transparent pricing</h2>
-                        <p className="text-gray-400 text-lg">Start free, scale as you grow</p>
+                        <p className="text-gray-400 text-lg">Start free, scale as you grow. Paid plans are coming soon.</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Free */}
@@ -348,8 +491,8 @@ export default function Landing() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link to="/auth/signup" className="block text-center py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition-all">
-                                Start Starter
+                            <Link to="/pricing" className="block text-center py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition-all">
+                                Coming Soon
                             </Link>
                         </div>
                         {/* Pro - Highlighted */}
@@ -368,8 +511,8 @@ export default function Landing() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link to="/auth/signup" className="block text-center py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/25">
-                                Start Pro Trial
+                            <Link to="/pricing" className="block text-center py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/25">
+                                Coming Soon
                             </Link>
                         </div>
                         {/* Teams */}
@@ -385,22 +528,58 @@ export default function Landing() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link to="/auth/signup" className="block text-center py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition-all">
-                                Contact Sales
+                            <Link to="/pricing" className="block text-center py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-medium transition-all">
+                                Coming Soon
                             </Link>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Final CTA - More impactful */}
+            {/* FAQ */}
+            <section id="faq" className="py-32 px-6 relative">
+                <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-14">
+                        <span className="text-indigo-400 font-medium text-sm uppercase tracking-wider">FAQ</span>
+                        <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Common questions</h2>
+                    </div>
+                    <div className="space-y-3">
+                        <FaqItem
+                            question="Do I need to know how to code?"
+                            answer="No. You describe what you want in plain English and the AI builds it. If you do know code, you can open the built-in editor and tweak anything yourself - it's a full Monaco editor with a terminal."
+                        />
+                        <FaqItem
+                            question="What kind of apps can I build?"
+                            answer="Excudo builds React + Tailwind web apps: landing pages, portfolios, dashboards, e-commerce fronts, interactive tools and more. Apps run live in your browser as they're generated."
+                        />
+                        <FaqItem
+                            question="Who owns the code?"
+                            answer="You do. Download your full project as a ZIP at any time and run it anywhere - it's standard React + Vite + Tailwind with no proprietary dependencies or lock-in."
+                        />
+                        <FaqItem
+                            question="How does publishing work?"
+                            answer="Click Publish in the editor and your app is built and deployed to a free live URL in seconds. Republish anytime to push updates."
+                        />
+                        <FaqItem
+                            question="What happens if the AI makes a mistake?"
+                            answer="Build errors are detected automatically and you can fix them with one click - the AI reads the error, finds the cause, and patches the code. Every AI edit is also snapshotted, so you can roll back to any earlier version."
+                        />
+                        <FaqItem
+                            question="Is there really a free plan?"
+                            answer="Yes - 3 projects and 5 AI generations per day, free, no credit card. Paid plans with higher limits are coming soon."
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA */}
             <section className="py-32 px-6 relative">
                 <div className="max-w-4xl mx-auto text-center relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-pink-600/20 rounded-3xl blur-3xl" />
-                    <div className="relative bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-3xl p-16">
+                    <div className="relative bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-3xl p-10 md:p-16">
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to build something amazing?</h2>
                         <p className="text-gray-400 mb-10 max-w-xl mx-auto text-lg">
-                            Join thousands of builders shipping faster with Excudo.
+                            Describe your idea and watch it come to life.
                             Start for free, no credit card required.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -433,22 +612,21 @@ export default function Landing() {
                             <span className="font-bold text-lg">Excudo</span>
                         </div>
                         <div className="flex items-center gap-8 text-sm text-gray-500">
-                            <a href="#" className="hover:text-white transition-colors">Terms</a>
-                            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-white transition-colors">Contact</a>
-                            <a href="#" className="hover:text-white transition-colors">Blog</a>
+                            <a href="#features" className="hover:text-white transition-colors">Features</a>
+                            <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+                            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
                         </div>
                         <div className="flex items-center gap-4">
-                            <a href="#" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors">
+                            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors" aria-label="Twitter">
                                 <Twitter className="w-5 h-5 text-gray-400" />
                             </a>
-                            <a href="#" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors">
+                            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors" aria-label="GitHub">
                                 <Github className="w-5 h-5 text-gray-400" />
                             </a>
                         </div>
                     </div>
                     <div className="text-center mt-12 text-sm text-gray-600">
-                        © 2025 Excudo. All rights reserved.
+                        © {new Date().getFullYear()} Excudo. All rights reserved.
                     </div>
                 </div>
             </footer>
@@ -469,12 +647,17 @@ export default function Landing() {
                     0%, 100% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
                 }
+                @keyframes step-in {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
                 .animate-float { animation: float linear infinite; }
                 .animate-scroll { animation: scroll 1.5s ease-in-out infinite; }
                 .animate-gradient { 
                     background-size: 200% 200%;
                     animation: gradient 3s ease infinite;
                 }
+                .animate-step-in { animation: step-in 0.5s ease-out forwards; }
             `}</style>
         </div>
     );
