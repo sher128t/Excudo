@@ -23,7 +23,7 @@ export async function action({ request }: Route.ActionArgs) {
 
         // Use AI to generate a concise project title
         const { text } = await generateText({
-            model: anthropic("claude-3-5-haiku-latest"),
+            model: anthropic("claude-haiku-4-5-20251001"),
             system: "You are a title generator. Given a user's project description, generate a short, concise project title (2-5 words max). Return ONLY the title, nothing else. No quotes, no punctuation at the end. Examples: 'Fitness App Website', 'AI Skiing Platform', 'Portfolio Site', 'E-commerce Dashboard'",
             prompt: `Generate a short project title for: "${prompt}"`,
             maxTokens: 30,

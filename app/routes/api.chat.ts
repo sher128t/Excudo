@@ -157,8 +157,9 @@ export async function action({ request }: Route.ActionArgs) {
         const effectiveMode = isPlanMode ? "fast" : (tier === "free" ? "fast" : requestedMode);
 
         const MODEL_MAP = {
+            // Pinned IDs per https://platform.claude.com/docs/en/about-claude/models/overview
             fast: "claude-haiku-4-5-20251001",
-            thinking: "claude-sonnet-4-5-20250929",
+            thinking: "claude-sonnet-4-6",
         };
 
         const MAX_TOKENS_MAP = {
