@@ -102,13 +102,141 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 html {
   scroll-behavior: smooth;
 }
+
+body {
+  min-width: 320px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-in {
+    animation: reveal-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .reveal-in-delayed {
+    animation: reveal-in 760ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  }
+
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
 `,
 
-    "src/App.jsx": `export default function App() {
+    "src/design/system.jsx": `import React from 'react';
+import { ArrowRight } from 'lucide-react';
+
+export const designIntents = {
+  editorial: {
+    page: 'bg-stone-50 text-stone-950',
+    muted: 'text-stone-600',
+    border: 'border-stone-200',
+    panel: 'bg-white border-stone-200',
+    accent: 'bg-stone-950 text-white',
+    soft: 'bg-stone-100 text-stone-900',
+  },
+  product: {
+    page: 'bg-slate-50 text-slate-950',
+    muted: 'text-slate-600',
+    border: 'border-slate-200',
+    panel: 'bg-white border-slate-200',
+    accent: 'bg-slate-950 text-white',
+    soft: 'bg-slate-100 text-slate-900',
+  },
+  warm: {
+    page: 'bg-[#f7f2ea] text-[#211b16]',
+    muted: 'text-[#756a5d]',
+    border: 'border-[#ded3c4]',
+    panel: 'bg-[#fffaf2] border-[#ded3c4]',
+    accent: 'bg-[#211b16] text-[#fffaf2]',
+    soft: 'bg-[#efe4d4] text-[#211b16]',
+  },
+};
+
+export function cn(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export function Page({ intent = designIntents.product, children }) {
+  return <div className={cn('min-h-screen', intent.page)}>{children}</div>;
+}
+
+export function Container({ children, className = '' }) {
+  return <div className={cn('mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8', className)}>{children}</div>;
+}
+
+export function Section({ children, className = '' }) {
+  return <section className={cn('py-16 sm:py-20 lg:py-24', className)}>{children}</section>;
+}
+
+export function Button({ children, variant = 'primary', className = '', ...props }) {
+  const base = 'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants = {
+    primary: 'bg-slate-950 text-white hover:bg-slate-800',
+    secondary: 'bg-white text-slate-950 ring-1 ring-slate-200 hover:bg-slate-50',
+    quiet: 'bg-transparent text-slate-700 hover:bg-slate-100',
+  };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
-      <p>Your app is being generated...</p>
-    </div>
+    <button className={cn(base, variants[variant] || variants.primary, className)} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export function LinkButton({ children, className = '', ...props }) {
+  return (
+    <a className={cn('inline-flex items-center gap-2 text-sm font-semibold text-slate-950 transition hover:gap-3', className)} {...props}>
+      {children}
+      <ArrowRight className="h-4 w-4" />
+    </a>
+  );
+}
+
+export function Card({ children, className = '' }) {
+  return <div className={cn('rounded-xl border border-slate-200 bg-white p-5 shadow-sm', className)}>{children}</div>;
+}
+
+export function Eyebrow({ children, className = '' }) {
+  return <p className={cn('text-sm font-semibold text-slate-500', className)}>{children}</p>;
+}
+
+export function Heading({ children, className = '' }) {
+  return <h2 className={cn('text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl', className)}>{children}</h2>;
+}
+
+export function Text({ children, className = '' }) {
+  return <p className={cn('text-base leading-7 text-slate-600', className)}>{children}</p>;
+}
+`,
+
+    "src/App.jsx": `import { Page, Container, Section, Heading, Text, Button } from './design/system.jsx';
+
+export default function App() {
+  return (
+    <Page>
+      <Section>
+        <Container className="max-w-3xl">
+          <div className="reveal-in rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">Excudo is designing</p>
+            <Heading className="mt-4">Your app is being generated.</Heading>
+            <Text className="mt-4">The first pass will replace this starter with a tailored interface, real content structure, and production-ready responsive styling.</Text>
+            <Button className="mt-6">Building now</Button>
+          </div>
+        </Container>
+      </Section>
+    </Page>
   );
 }
 `,
@@ -376,8 +504,9 @@ const TRADITIONAL_TEMPLATE_SUMMARY = `The project starts from a pre-mounted Vite
 - package.json (react, react-dom, react-router-dom@6, lucide-react + vite/tailwind tooling - already installed)
 - vite.config.js, tailwind.config.js, postcss.config.js, index.html (DO NOT recreate these)
 - src/main.jsx (renders src/App.jsx - only edit if you need providers/routers at the root)
-- src/index.css (Tailwind directives - extend with custom CSS if needed)
-- src/App.jsx (placeholder - REPLACE this with the real app)`;
+- src/index.css (Tailwind directives + reveal animation utilities - extend with custom CSS if needed)
+- src/design/system.jsx (small production UI kit: Page, Container, Section, Button, Card, Heading, Text, design intents, cn helper - use and extend it instead of inventing disconnected styling)
+- src/App.jsx (starter shell - REPLACE this with the real app, keeping useful primitives from src/design/system.jsx)`;
 
 const IMMERSIVE_3D_TEMPLATE_SUMMARY = `The project starts from a pre-mounted Vite + React 18 + Tailwind CSS 3 template with React Three Fiber:
 - package.json (react, react-dom, react-router-dom@6, lucide-react, three, @react-three/fiber, @react-three/drei, @react-three/postprocessing + vite/tailwind tooling - already installed)

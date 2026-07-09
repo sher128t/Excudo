@@ -8,7 +8,58 @@ import { getAuthenticatedUser, checkAndUseCredit, getUserTier } from "~/lib/auth
 function getProjectStyleGuidance(projectStyle: ProjectStyle): string {
     if (projectStyle !== "immersive3d") {
         return `## SELECTED PROJECT STYLE
-The user selected Traditional. Build a polished React + Tailwind app using standard HTML/CSS layout, components, forms, routing, and responsive UI. Do not add 3D/WebGL dependencies unless the user explicitly asks for them later.`;
+The user selected Traditional. Build a polished React + Tailwind app using standard HTML/CSS layout, components, forms, routing, and responsive UI. Do not add 3D/WebGL dependencies unless the user explicitly asks for them later.
+
+## TRADITIONAL DESIGN OPERATING SYSTEM
+Before writing code, infer the design read from the prompt. Do this silently unless the user is in plan mode:
+- Page/app kind: marketing, portfolio, ecommerce, dashboard, internal tool, editorial, community, booking, education, etc.
+- Audience: who is reading or operating it, their urgency, their tolerance for density, and the trust level required.
+- Brand register: brand/marketing surfaces should feel memorable and image-led; product/tool surfaces should feel efficient, scannable, and repeatable.
+- Vibe words: choose 2-4 concrete adjectives from the prompt. Avoid defaulting to "modern, sleek, powerful".
+- Design dials: DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY from 1-5. Let them drive layout, animation, and information density.
+- Anti-references: identify patterns to avoid, especially if the prompt hints at premium, editorial, serious, regulated, or enterprise.
+
+Use src/design/system.jsx as the default primitive layer. Extend it when useful, but keep a coherent system: one theme, one radius scale, one accent strategy, one type hierarchy. A page should feel designed for this exact brief, not generated from a universal SaaS recipe.
+
+## ANTI-SLOP RULES FOR TRADITIONAL OUTPUT
+These are hard defaults unless the user explicitly asks for one:
+- Do not build the generic AI SaaS page: centered hero, tiny uppercase eyebrow, purple gradient word, three equal feature cards, icon tile over each heading.
+- Do not use placeholder colored rectangles, fake dashboards made only from anonymous div bars, "image goes here" panels, or generic gradient blocks. Use real Unsplash image URLs with known photo IDs, meaningful UI surfaces, charts/tables/forms that match the product, or no image.
+- Do not use big rounded-square icon tiles stacked above headings. Icons may sit inline with labels or act as small affordances, but they should not be the whole visual system.
+- Do not use glassmorphism, glow borders, mesh blobs, huge soft shadows, or purple-blue gradients as decoration by default.
+- Do not repeat tiny uppercase section kicker labels before every section. Structure the page with content, imagery, artifacts, contrast, or layout changes.
+- Do not use fake stats unless they are clearly sample data for an app UI. For marketing claims, use qualitative proof, customer quotes, concrete workflow examples, or leave the section out.
+- Do not create empty bento cells, decorative status dots, scroll cues, version labels, weather/time/location strips, or mono-caps decoration text.
+- Avoid one-note palettes. Use neutral foundations and one deliberate accent unless the brand brief says otherwise.
+- Cards should usually top out at 12-16px radius. Reserve full pills for tags/buttons.
+
+## LAYOUT VARIANCE
+Pick sections that fit the product. Across a multi-section page, use at least 4 different layout families when there is enough content:
+- editorial hero with image/caption
+- asymmetric two-column feature
+- split product walkthrough
+- comparison table
+- testimonial/proof band
+- pricing with real plan differences
+- logo/customer strip only if plausible
+- dashboard/tool layout with real controls
+- FAQ, CTA, footer
+Three equal cards are allowed only when the content genuinely belongs in equal buckets. Otherwise use zig-zag, asymmetry, tabs, timeline, table, media-led section, or product workflow.
+
+## MOTION AND MICROINTERACTIONS
+Traditional output should still feel alive:
+- Add purposeful hover/focus states to links, buttons, cards, inputs, tabs, and menus.
+- Use subtle reveal/stagger animations for major sections via CSS classes or IntersectionObserver. Respect prefers-reduced-motion.
+- Use motion to clarify state changes, selected tabs, accordions, drawers, validation, and loading.
+- Avoid animation for pure spectacle. If MOTION_INTENSITY is 4 or 5, the page must actually include meaningful animation; if it is 1 or 2, keep it restrained.
+
+## PRE-SHIP DESIGN CHECK
+Before the final assistant summary, mentally verify:
+- The hero fits the first viewport and the CTA is visible without scrolling.
+- The design does not rely on placeholder blocks, icon tiles, fake screenshots, or repeated card rows.
+- Typography has clear contrast between heading, subheading, body, labels, and metadata.
+- Mobile at 375px has no clipped text, overcrowded nav, or horizontal overflow.
+- Color, radius, density, and theme are consistent from top to bottom.`;
     }
 
     return `## SELECTED PROJECT STYLE
@@ -70,7 +121,7 @@ If you receive an error report (build error, missing import, etc.), read the rel
 - Depth: subtle borders (border-slate-200/dark:border-slate-800), soft shadows (shadow-sm, shadow-lg for cards), rounded-xl/2xl.
 - Micro-interactions: hover states on every interactive element (hover:scale-[1.02], hover:shadow-lg, transition-all duration-200).
 - Icons: use lucide-react (already installed) - import { IconName } from 'lucide-react'. Never use emoji as icons.
-- Images: use Unsplash with specific search terms: https://images.unsplash.com/photo-{ID}?w=1200&q=80 - only use real photo IDs you are confident exist; otherwise use gradient/colored placeholders.
+- Images and artifacts: use real, relevant media when imagery matters. Unsplash URLs are allowed only with real photo IDs you are confident exist. If you do not have a real image, design with typography, tables, forms, product data, or purposeful blank space rather than colored placeholders.
 - Mobile-first responsive: every layout must work at 375px. Use md:/lg: prefixes to scale up.
 
 ## COLOR CONTRAST (critical - always follow)
