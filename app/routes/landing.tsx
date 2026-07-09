@@ -4,8 +4,8 @@ import type { Route } from "./+types/landing";
 import type { ProjectStyle } from "~/lib/template";
 import {
     Hammer, Sparkles, Zap, ArrowRight, Check, Globe,
-    Rocket, Github, Twitter, Cpu, Lock, Menu, X,
-    FileCode, Terminal, History, ChevronDown, LayoutTemplate, Box
+    Github, Twitter, Menu, X,
+    FileCode, Terminal, ChevronDown, LayoutTemplate, Box
 } from "lucide-react";
 
 const LandingScene = lazy(() => import("~/components/landing3d/LandingScene"));
@@ -182,6 +182,282 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
             {open && (
                 <div className="px-6 pb-5 text-gray-400 text-sm leading-relaxed">{answer}</div>
             )}
+        </div>
+    );
+}
+
+type FeaturePreviewType = "generate" | "preview" | "repair" | "history" | "publish" | "export";
+
+function FeaturePreview({ type }: { type: FeaturePreviewType }) {
+    if (type === "generate") {
+        return (
+            <div className="h-40 rounded-2xl border border-white/10 bg-[#080812]/95 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                    <div className="flex gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-400/70" />
+                        <span className="w-2 h-2 rounded-full bg-yellow-400/70" />
+                        <span className="w-2 h-2 rounded-full bg-green-400/70" />
+                    </div>
+                    <span className="text-[10px] text-gray-500 font-mono">src/App.jsx</span>
+                </div>
+                <div className="grid grid-cols-[1fr_1.2fr] gap-3 p-4">
+                    <div className="space-y-2">
+                        <div className="h-7 rounded-lg bg-indigo-500/20 border border-indigo-400/20" />
+                        <div className="h-7 rounded-lg bg-white/[0.04]" />
+                        <div className="h-7 rounded-lg bg-white/[0.04]" />
+                    </div>
+                    <div className="space-y-2 font-mono text-[10px]">
+                        <div className="h-2 w-3/4 rounded bg-emerald-300/70" />
+                        <div className="h-2 w-full rounded bg-indigo-300/40" />
+                        <div className="h-2 w-5/6 rounded bg-purple-300/40" />
+                        <div className="h-2 w-2/3 rounded bg-sky-300/40" />
+                        <div className="mt-3 h-8 rounded-lg border border-emerald-400/20 bg-emerald-400/10" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "preview") {
+        return (
+            <div className="h-40 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950 to-indigo-950/70 p-4 overflow-hidden">
+                <div className="flex items-center justify-between mb-5">
+                    <div className="h-2.5 w-16 rounded bg-white/70" />
+                    <div className="flex gap-2">
+                        <div className="h-2 w-8 rounded bg-white/20" />
+                        <div className="h-2 w-8 rounded bg-white/20" />
+                        <div className="h-4 w-12 rounded-full bg-indigo-400/80" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-[1.1fr_0.9fr] gap-4">
+                    <div className="space-y-3">
+                        <div className="h-4 w-full rounded bg-white/85" />
+                        <div className="h-4 w-2/3 rounded bg-white/45" />
+                        <div className="h-2 w-5/6 rounded bg-white/20" />
+                        <div className="flex gap-2 pt-1">
+                            <div className="h-6 w-20 rounded-full bg-white/90" />
+                            <div className="h-6 w-16 rounded-full border border-white/20 bg-white/5" />
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                        <div className="h-16 rounded-lg bg-gradient-to-br from-cyan-400/70 to-purple-500/60" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "repair") {
+        return (
+            <div className="h-40 rounded-2xl border border-white/10 bg-[#07070d] p-4 font-mono text-[10px] overflow-hidden">
+                <div className="mb-3 flex items-center justify-between">
+                    <span className="text-gray-500">build log</span>
+                    <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-emerald-300">fixed</span>
+                </div>
+                <div className="space-y-2">
+                    <div className="rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-red-200">Missing import: PricingCard</div>
+                    <div className="rounded-lg border border-indigo-400/20 bg-indigo-400/10 px-3 py-2 text-indigo-100">Read src/components/Pricing.jsx</div>
+                    <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-emerald-200">Updated import path and rebuilt</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "history") {
+        return (
+            <div className="h-40 rounded-2xl border border-white/10 bg-[#090914] p-4 overflow-hidden">
+                <div className="space-y-3">
+                    {["Hero polish", "Pricing update", "Deploy-ready copy"].map((label, index) => (
+                        <div key={label} className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full border ${index === 0 ? "border-emerald-300/60 bg-emerald-300/10" : "border-white/10 bg-white/[0.04]"}`} />
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-white">{label}</span>
+                                    <span className="text-[10px] text-gray-500">v{8 - index}</span>
+                                </div>
+                                <div className="mt-1 h-1.5 rounded bg-white/10" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "publish") {
+        return (
+            <div className="h-40 rounded-2xl border border-white/10 bg-gradient-to-br from-[#07131a] to-[#101028] p-4 overflow-hidden">
+                <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs text-emerald-200">Production</span>
+                        <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.9)]" />
+                    </div>
+                    <div className="h-3 w-4/5 rounded bg-white/80" />
+                    <div className="mt-2 h-2 w-2/3 rounded bg-white/20" />
+                    <div className="mt-5 flex items-center gap-2 rounded-lg bg-black/30 px-3 py-2">
+                        <Globe className="w-3.5 h-3.5 text-cyan-300" />
+                        <span className="text-[10px] text-gray-300 font-mono">excudo.app/p/launch</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-40 rounded-2xl border border-white/10 bg-[#080812] p-4 overflow-hidden">
+            <div className="grid grid-cols-[0.8fr_1.2fr] gap-4">
+                <div className="space-y-2 text-[10px] text-gray-400">
+                    {["src", "components", "App.jsx", "index.css"].map((file, index) => (
+                        <div key={file} className={`rounded-md px-2 py-1.5 ${index === 2 ? "bg-indigo-400/15 text-indigo-100" : "bg-white/[0.04]"}`}>
+                            {file}
+                        </div>
+                    ))}
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                    <div className="h-3 w-2/3 rounded bg-white/70" />
+                    <div className="mt-4 space-y-2">
+                        <div className="h-2 rounded bg-sky-300/40" />
+                        <div className="h-2 w-5/6 rounded bg-purple-300/40" />
+                        <div className="h-2 w-3/4 rounded bg-emerald-300/40" />
+                    </div>
+                    <div className="mt-5 h-7 rounded-lg bg-white text-center text-[10px] font-semibold leading-7 text-black">Download ZIP</div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProcessPreview({ step }: { step: number }) {
+    if (step === 1) {
+        return (
+            <div className="mx-auto mb-8 h-32 max-w-xs rounded-2xl border border-white/10 bg-[#0b0b14]/90 p-4 text-left shadow-2xl shadow-indigo-500/10">
+                <div className="mb-3 h-2 w-20 rounded bg-white/20" />
+                <div className="rounded-xl bg-white/[0.06] p-3">
+                    <div className="h-2 w-full rounded bg-white/40" />
+                    <div className="mt-2 h-2 w-3/4 rounded bg-white/20" />
+                    <div className="mt-4 h-7 w-24 rounded-full bg-white text-center text-[10px] font-semibold leading-7 text-black">Generate</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 2) {
+        return (
+            <div className="mx-auto mb-8 h-32 max-w-xs rounded-2xl border border-white/10 bg-[#0b0b14]/90 p-4 text-left shadow-2xl shadow-purple-500/10">
+                <div className="grid grid-cols-[0.8fr_1.2fr] gap-3">
+                    <div className="space-y-2">
+                        <div className="h-5 rounded bg-emerald-400/15" />
+                        <div className="h-5 rounded bg-indigo-400/15" />
+                        <div className="h-5 rounded bg-white/[0.05]" />
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-gradient-to-br from-indigo-500/30 to-pink-500/20 p-3">
+                        <div className="h-3 rounded bg-white/75" />
+                        <div className="mt-2 h-2 w-2/3 rounded bg-white/25" />
+                        <div className="mt-5 grid grid-cols-3 gap-1.5">
+                            <div className="h-8 rounded bg-white/10" />
+                            <div className="h-8 rounded bg-white/10" />
+                            <div className="h-8 rounded bg-white/10" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mx-auto mb-8 h-32 max-w-xs rounded-2xl border border-white/10 bg-[#0b0b14]/90 p-4 text-left shadow-2xl shadow-pink-500/10">
+            <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-emerald-200">Ready to publish</span>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                </div>
+                <div className="mt-4 h-2 w-full rounded bg-white/30" />
+                <div className="mt-2 h-2 w-2/3 rounded bg-white/20" />
+                <div className="mt-4 h-7 rounded-lg bg-emerald-300 text-center text-[10px] font-semibold leading-7 text-black">Live URL copied</div>
+            </div>
+        </div>
+    );
+}
+
+function TemplatePreview({ type }: { type: "saas" | "commerce" | "portfolio" | "dashboard" }) {
+    if (type === "dashboard") {
+        return (
+            <div className="absolute inset-0 bg-[#08130f] p-5">
+                <div className="flex h-full gap-4">
+                    <div className="w-16 rounded-2xl bg-white/[0.06]" />
+                    <div className="flex-1 space-y-4">
+                        <div className="flex justify-between">
+                            <div className="h-4 w-28 rounded bg-white/70" />
+                            <div className="h-8 w-24 rounded-lg bg-emerald-300/80" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="h-16 rounded-xl bg-white/[0.08]" />
+                            <div className="h-16 rounded-xl bg-white/[0.08]" />
+                            <div className="h-16 rounded-xl bg-white/[0.08]" />
+                        </div>
+                        <div className="h-20 rounded-xl bg-white/[0.06]" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "portfolio") {
+        return (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#160d2c] to-[#050509] p-5">
+                <div className="flex h-full items-center gap-5">
+                    <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-violet-300 to-fuchsia-500 shadow-2xl shadow-fuchsia-500/20" />
+                    <div className="flex-1">
+                        <div className="h-5 w-32 rounded bg-white/85" />
+                        <div className="mt-3 h-3 w-44 rounded bg-white/30" />
+                        <div className="mt-7 grid grid-cols-2 gap-2">
+                            <div className="h-12 rounded-xl bg-white/[0.08]" />
+                            <div className="h-12 rounded-xl bg-white/[0.08]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (type === "commerce") {
+        return (
+            <div className="absolute inset-0 bg-[#17060d] p-5">
+                <div className="mb-5 flex items-center justify-between">
+                    <div className="h-3 w-24 rounded bg-white/70" />
+                    <div className="h-7 w-20 rounded-full bg-rose-300/80" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                    {[0, 1, 2].map((item) => (
+                        <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3">
+                            <div className="h-16 rounded-xl bg-gradient-to-br from-rose-300/70 to-orange-300/50" />
+                            <div className="mt-3 h-2 rounded bg-white/50" />
+                            <div className="mt-2 h-2 w-2/3 rounded bg-white/20" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#06152a] to-[#031015] p-5">
+            <div className="mb-6 flex items-center justify-between">
+                <div className="h-3 w-24 rounded bg-white/75" />
+                <div className="flex gap-2">
+                    <div className="h-2 w-8 rounded bg-white/20" />
+                    <div className="h-2 w-8 rounded bg-white/20" />
+                    <div className="h-6 w-16 rounded-full bg-cyan-300/80" />
+                </div>
+            </div>
+            <div className="max-w-[70%]">
+                <div className="h-6 w-full rounded bg-white/90" />
+                <div className="mt-3 h-3 w-4/5 rounded bg-white/30" />
+                <div className="mt-6 flex gap-2">
+                    <div className="h-8 w-24 rounded-full bg-white" />
+                    <div className="h-8 w-20 rounded-full border border-white/20 bg-white/5" />
+                </div>
+            </div>
         </div>
     );
 }
@@ -433,18 +709,16 @@ export default function Landing() {
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
-                            { icon: Sparkles, title: "AI-Powered Generation", desc: "Describe your app in plain English. Claude understands context and builds exactly what you need.", color: "from-indigo-500 to-purple-500" },
-                            { icon: Zap, title: "Real-Time Preview", desc: "See changes instantly as the AI writes code. The app runs live in your browser as it's built.", color: "from-yellow-500 to-orange-500" },
-                            { icon: Cpu, title: "AI Error Fixing", desc: "Build errors are detected automatically. One click and the AI finds the root cause and fixes it.", color: "from-red-500 to-orange-500" },
-                            { icon: History, title: "Version History", desc: "Every AI edit is snapshotted. Roll back to any previous version of your project instantly.", color: "from-pink-500 to-rose-500" },
-                            { icon: Globe, title: "One-Click Publish", desc: "Publish your app to a live URL in seconds, straight from the editor. Share it with anyone.", color: "from-blue-500 to-cyan-500" },
-                            { icon: Lock, title: "Your Code, No Lock-In", desc: "Projects are private by default. Download clean React + Tailwind code as a ZIP anytime.", color: "from-purple-500 to-pink-500" },
+                            { preview: "generate" as const, title: "AI-Powered Generation", desc: "Describe your app in plain English. Claude understands context and writes production-ready React files." },
+                            { preview: "preview" as const, title: "Real-Time Preview", desc: "See changes instantly as the AI writes code. The app runs live in your browser as it's built." },
+                            { preview: "repair" as const, title: "AI Error Fixing", desc: "Build errors are detected automatically. One click and the AI reads the failure, patches the root cause and rebuilds." },
+                            { preview: "history" as const, title: "Version History", desc: "Every AI edit is snapshotted. Roll back to any previous version of your project instantly." },
+                            { preview: "publish" as const, title: "One-Click Publish", desc: "Publish your app to a live URL in seconds, straight from the editor. Share it with anyone." },
+                            { preview: "export" as const, title: "Your Code, No Lock-In", desc: "Projects are private by default. Download clean React + Tailwind code as a ZIP anytime." },
                         ].map((feature, i) => (
-                            <div key={i} className="group p-8 bg-gradient-to-br from-white/5 to-transparent border border-white/5 rounded-3xl hover:border-white/20 transition-all duration-500 hover:-translate-y-1">
-                                <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                                    <feature.icon className="w-7 h-7 text-white" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                            <div key={i} className="group p-5 bg-[#080811]/75 border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-500 hover:-translate-y-1 backdrop-blur-xl">
+                                <FeaturePreview type={feature.preview} />
+                                <h3 className="text-xl font-semibold mt-6 mb-3">{feature.title}</h3>
                                 <p className="text-gray-400 leading-relaxed">{feature.desc}</p>
                             </div>
                         ))}
@@ -460,22 +734,18 @@ export default function Landing() {
                         <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Three steps to launch</h2>
                         <p className="text-gray-400 text-lg">From idea to live app in under a minute</p>
                     </div>
-                    <div className="grid md:grid-cols-3 gap-8 relative">
-                        {/* Connection line */}
-                        <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-30" />
-
+                    <div className="grid md:grid-cols-3 gap-6 relative">
                         {[
-                            { step: "01", title: "Describe Your Vision", desc: "Tell Excudo what you want to build in plain English. Be as detailed or simple as you like.", icon: Sparkles },
-                            { step: "02", title: "Watch AI Build", desc: "AI generates your app in real-time. See files created and preview updates instantly.", icon: Cpu },
-                            { step: "03", title: "Iterate & Publish", desc: "Refine with follow-up prompts. Publish to a live URL or export the code when ready.", icon: Rocket },
+                            { step: "01", title: "Describe Your Vision", desc: "Tell Excudo what you want to build in plain English. Be as detailed or simple as you like." },
+                            { step: "02", title: "Watch AI Build", desc: "AI generates your app in real-time. See files created and preview updates instantly." },
+                            { step: "03", title: "Iterate & Publish", desc: "Refine with follow-up prompts. Publish to a live URL or export the code when ready." },
                         ].map((item, i) => (
-                            <div key={i} className="relative text-center">
-                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
-                                    <item.icon className="w-8 h-8 text-white" />
-                                </div>
-                                <div className="text-6xl font-bold bg-gradient-to-b from-white/20 to-transparent bg-clip-text text-transparent mb-4">{item.step}</div>
+                            <div key={i} className="relative text-center rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
+                                <ProcessPreview step={i + 1} />
+                                <div className="text-sm font-semibold text-indigo-300 mb-3">{item.step}</div>
                                 <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                                <p className="text-gray-400">{item.desc}</p>
+                                <p className="text-gray-400 leading-relaxed">{item.desc}</p>
+                                <div className="absolute inset-x-6 top-5 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                             </div>
                         ))}
                     </div>
@@ -492,24 +762,24 @@ export default function Landing() {
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { name: "SaaS Landing", desc: "Modern startup page", colors: "from-blue-600 to-cyan-500" },
-                            { name: "E-commerce", desc: "Online store", colors: "from-pink-600 to-rose-500" },
-                            { name: "Portfolio", desc: "Personal showcase", colors: "from-purple-600 to-violet-500" },
-                            { name: "Dashboard", desc: "Admin interface", colors: "from-green-600 to-emerald-500" },
+                            { name: "SaaS Landing", desc: "Modern startup page", type: "saas" as const },
+                            { name: "E-commerce", desc: "Online store", type: "commerce" as const },
+                            { name: "Portfolio", desc: "Personal showcase", type: "portfolio" as const },
+                            { name: "Dashboard", desc: "Admin interface", type: "dashboard" as const },
                         ].map((template, i) => (
                             <Link
                                 key={i}
                                 to="/auth/signup"
-                                className="group relative h-56 rounded-3xl overflow-hidden"
+                                className="group relative h-64 rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] transition-all duration-500 hover:-translate-y-1 hover:border-white/25"
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${template.colors} opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105`} />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                <div className="absolute bottom-6 left-6 right-6">
+                                <TemplatePreview type={template.type} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent" />
+                                <div className="absolute bottom-5 left-5 right-5">
                                     <p className="font-semibold text-lg text-white mb-1">{template.name}</p>
-                                    <p className="text-sm text-white/70">{template.desc}</p>
+                                    <p className="text-sm text-white/65">{template.desc}</p>
                                 </div>
-                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ArrowRight className="w-5 h-5 text-white" />
+                                <div className="absolute top-4 right-4 rounded-full border border-white/15 bg-black/30 p-2 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+                                    <ArrowRight className="w-4 h-4 text-white" />
                                 </div>
                             </Link>
                         ))}
