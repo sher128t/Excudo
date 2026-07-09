@@ -97,6 +97,7 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                     setServerUrl(url);
                     setServerStatus("ready");
                     setServerStatusMessage("Server running");
+                    setBuildError(null);
                 });
             } catch (err) {
                 console.error("Failed to boot WebContainer:", err);
@@ -183,17 +184,24 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
         terminalWriter.current?.(`> ${cmd} ${args.join(" ")}\r\n`);
 
         const process = await webcontainer.spawn(cmd, args);
+        let output = "";
 
         process.output.pipeTo(
             new WritableStream({
                 write(data) {
                     console.log(`[${cmd}]`, data);
+                    output += data;
                     terminalWriter.current?.(data);
                 },
             })
         );
 
-        return await process.exit;
+        const exitCode = await process.exit;
+        if (exitCode !== 0) {
+            const cleanOutput = stripAnsi(output).slice(-2500).trim();
+            if (cleanOutput) setBuildError(cleanOutput);
+        }
+        return exitCode;
     };
 
     // Run a full shell command (supports &&, pipes, quotes) and capture output
@@ -267,6 +275,9 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
                 return;
             }
 
+            setBuildError(null);
+            outputBufferRef.current = "";
+
             // Install dependencies
             setServerStatus("installing");
             setServerStatusMessage("Installing dependencies...");
@@ -282,8 +293,6 @@ export function WebContainerProvider({ children }: { children: ReactNode }) {
             // Start dev server
             setServerStatus("starting");
             setServerStatusMessage("Starting dev server...");
-            setBuildError(null);
-            outputBufferRef.current = "";
 
             // Don't await - server runs indefinitely
             const process = await webcontainer.spawn("npm", ["run", "dev"]);

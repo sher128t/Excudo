@@ -14,6 +14,23 @@ import ReactMarkdown from "react-markdown";
 
 export type ModelMode = "plan" | "fast" | "thinking";
 
+const AUTO_FIX_PREFIX = "[EXCUDO_AUTO_FIX]";
+
+function isAutoFixMessageContent(content: unknown) {
+    return typeof content === "string" && content.startsWith(AUTO_FIX_PREFIX);
+}
+
+function createAutoFixPrompt(errorText: string) {
+    return `${AUTO_FIX_PREFIX}\nThe app has a build/runtime error. Here is the dev server output:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nFind the root cause and fix it. Keep this repair quiet and do not mention internal automation markers.`;
+}
+
+function resizePromptTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = "auto";
+    const maxHeight = 180;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
 function inferProjectStyleFromFiles(files: Record<string, string>): ProjectStyle {
     const packageJson = files["package.json"] || files["/package.json"] || "";
     return files["src/orbit/kit.jsx"] || packageJson.includes("@react-three/fiber")
@@ -22,14 +39,17 @@ function inferProjectStyleFromFiles(files: Record<string, string>): ProjectStyle
 }
 
 export function ChatInterface() {
-    const { writeFile, readFile, deleteFile, listFiles, runShellCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
+    const { writeFile, readFile, deleteFile, listFiles, runShellCommand, resetContainer, startDevServer, serverStatus, buildError } = useWebContainer();
     const { currentProject, saveProject } = useProject();
     const { profile, refreshProfile } = useAuth();
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const promptInputRef = useRef<HTMLTextAreaElement>(null);
     const initialPromptHandled = useRef(false);
     const projectLoadedRef = useRef<string | null>(null);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const fileSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastAutoFixKeyRef = useRef<string | null>(null);
+    const repairInProgressRef = useRef(false);
     const [showAttachModal, setShowAttachModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [fixRequest, setFixRequest] = useAtom(fixRequestAtom);
@@ -188,9 +208,15 @@ export function ChatInterface() {
             // Clear input and attachments
             setInput("");
             setAttachedFiles([]);
+            requestAnimationFrame(() => {
+                if (promptInputRef.current) resizePromptTextarea(promptInputRef.current);
+            });
         } else {
             // No images, use standard submit
             originalHandleSubmit(e);
+            requestAnimationFrame(() => {
+                if (promptInputRef.current) resizePromptTextarea(promptInputRef.current);
+            });
         }
     }, [input, originalHandleSubmit, attachedFiles, append, setInput]);
 
@@ -222,11 +248,21 @@ export function ChatInterface() {
                     startDevServer();
                 }
 
+                if (hasFiles && hasPackageJson && serverStatus === "error" && repairInProgressRef.current) {
+                    console.log("Repair finished - retrying dev server");
+                    repairInProgressRef.current = false;
+                    startDevServer();
+                } else if (repairInProgressRef.current && serverStatus !== "error") {
+                    repairInProgressRef.current = false;
+                }
+
                 // Version snapshot (Phase: history & rollback)
                 if (filesChangedRef.current && currentProject && hasFiles) {
                     filesChangedRef.current = false;
                     const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
-                    const label = typeof lastUserMsg?.content === "string"
+                    const label = isAutoFixMessageContent(lastUserMsg?.content)
+                        ? "Auto repair"
+                        : typeof lastUserMsg?.content === "string"
                         ? lastUserMsg.content.slice(0, 80)
                         : "AI edit";
                     createProjectVersion(currentProject.id, { ...projectFilesRef.current }, label)
@@ -243,12 +279,30 @@ export function ChatInterface() {
             const errorText = fixRequest;
             setFixRequest(null);
             lastMessageRef.current = "Fix the build error";
+            repairInProgressRef.current = true;
             append({
                 role: "user",
-                content: `The app has a build/runtime error. Here is the dev server output:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nFind the root cause and fix it.`,
+                content: createAutoFixPrompt(errorText),
             });
         }
     }, [fixRequest, isLoading, append, setFixRequest]);
+
+    // Automatically repair detected preview/build errors without exposing raw logs.
+    useEffect(() => {
+        if (!buildError || isLoading || modelModeRef.current === "plan") return;
+
+        const errorKey = buildError.replace(/\s+/g, " ").trim().slice(-1200);
+        if (!errorKey || lastAutoFixKeyRef.current === errorKey) return;
+
+        lastAutoFixKeyRef.current = errorKey;
+        setFixRequest(null);
+        lastMessageRef.current = "Auto-fix build error";
+        repairInProgressRef.current = true;
+        append({
+            role: "user",
+            content: createAutoFixPrompt(buildError),
+        });
+    }, [buildError, isLoading, append, setFixRequest]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -500,7 +554,12 @@ export function ChatInterface() {
                                     <button
                                         key={prompt}
                                         type="button"
-                                        onClick={() => setInput(prompt)}
+                                        onClick={() => {
+                                            setInput(prompt);
+                                            requestAnimationFrame(() => {
+                                                if (promptInputRef.current) resizePromptTextarea(promptInputRef.current);
+                                            });
+                                        }}
                                         className="px-3 py-1.5 text-xs text-gray-400 bg-[#12121a] border border-[#1e1e2e] rounded-lg hover:border-indigo-500/50 hover:text-white transition-colors"
                                     >
                                         {prompt}
@@ -510,7 +569,7 @@ export function ChatInterface() {
                         </div>
                     </div>
                 ) : (
-                    messages.map((message) => (
+                    messages.filter((message) => !isAutoFixMessageContent(message.content)).map((message) => (
                         <div
                             key={message.id}
                             className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
@@ -810,12 +869,22 @@ export function ChatInterface() {
                     </button>
                     <div className="flex-1 relative group">
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
-                        <input
-                            type="text"
+                        <textarea
+                            ref={promptInputRef}
+                            rows={1}
                             value={input}
-                            onChange={handleInputChange}
+                            onChange={(e) => {
+                                handleInputChange(e);
+                                resizePromptTextarea(e.currentTarget);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    e.currentTarget.form?.requestSubmit();
+                                }
+                            }}
                             placeholder="Describe your app..."
-                            className="relative w-full bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 transition-all"
+                            className="relative w-full min-h-[46px] max-h-[180px] resize-none bg-[#12121a] border border-[#1e1e2e] rounded-xl px-4 py-3 text-sm leading-5 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 transition-all"
                         />
                     </div>
                     {isLoading ? (

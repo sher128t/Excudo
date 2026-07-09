@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
@@ -25,11 +25,19 @@ const TYPING_PROMPTS = [
     "a mobile app UI",
 ];
 
+function resizePromptTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = "auto";
+    const maxHeight = 180;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
 export default function Dashboard() {
     const { user, profile, loading: authLoading, refreshProfile } = useAuth();
     const { projects, loading: projectsLoading, createNewProject, deleteProjectById, renameProjectById } = useProject();
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState("");
+    const promptInputRef = useRef<HTMLTextAreaElement>(null);
     const [creatingProject, setCreatingProject] = useState(false);
     const [limitError, setLimitError] = useState("");
 
@@ -109,6 +117,9 @@ export default function Dashboard() {
         if (landingPrompt) {
             sessionStorage.removeItem("landingPrompt");
             setPrompt(landingPrompt);
+            requestAnimationFrame(() => {
+                if (promptInputRef.current) resizePromptTextarea(promptInputRef.current);
+            });
         }
 
         const landingProjectStyle = sessionStorage.getItem("landingProjectStyle");
@@ -332,13 +343,24 @@ export default function Dashboard() {
                                 <form onSubmit={handleStartProject}>
                                     <div className={`relative bg-[#1a1a24]/80 backdrop-blur-xl border rounded-2xl overflow-hidden ${limitError ? 'border-red-500/50' : 'border-white/10'}`}>
                                         {/* Main input row */}
-                                        <div className="flex items-center px-4 py-4">
-                                            <input
-                                                type="text"
+                                        <div className="flex items-start px-4 py-4">
+                                            <textarea
+                                                ref={promptInputRef}
+                                                rows={1}
                                                 value={prompt}
-                                                onChange={(e) => { setPrompt(e.target.value); setLimitError(""); }}
+                                                onChange={(e) => {
+                                                    setPrompt(e.target.value);
+                                                    setLimitError("");
+                                                    resizePromptTextarea(e.currentTarget);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        e.currentTarget.form?.requestSubmit();
+                                                    }
+                                                }}
                                                 placeholder={`Ask Excudo to create ${typingText}${!isDeleting ? '|' : ''}`}
-                                                className="flex-1 bg-transparent text-white text-base placeholder-gray-500 focus:outline-none"
+                                                className="flex-1 min-h-7 max-h-[180px] resize-none bg-transparent text-white text-base leading-7 placeholder-gray-500 focus:outline-none"
                                                 disabled={creatingProject || !canCreate}
                                             />
                                         </div>

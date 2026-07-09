@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import type { Route } from "./+types/landing";
 import type { ProjectStyle } from "~/lib/template";
 import {
@@ -462,8 +462,16 @@ function TemplatePreview({ type }: { type: "saas" | "commerce" | "portfolio" | "
     );
 }
 
+function resizePromptTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = "auto";
+    const maxHeight = 180;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
 export default function Landing() {
     const [prompt, setPrompt] = useState("");
+    const promptInputRef = useRef<HTMLTextAreaElement>(null);
     const [currentWord, setCurrentWord] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [projectStyle, setProjectStyle] = useState<ProjectStyle>("immersive3d");
@@ -637,15 +645,25 @@ export default function Landing() {
                                 <div className="hidden sm:block pl-4">
                                     <Sparkles className="w-5 h-5 text-indigo-400" />
                                 </div>
-                                <input
-                                    type="text"
+                                <textarea
+                                    ref={promptInputRef}
+                                    rows={1}
                                     value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
+                                    onChange={(e) => {
+                                        setPrompt(e.target.value);
+                                        resizePromptTextarea(e.currentTarget);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            e.currentTarget.form?.requestSubmit();
+                                        }
+                                    }}
                                     placeholder={projectStyle === "immersive3d"
                                         ? "Create an interactive 3D portfolio with scroll effects..."
                                         : "Create a fitness tracking app with workout plans..."
                                     }
-                                    className="flex-1 bg-transparent px-4 sm:px-0 py-4 text-base sm:text-lg text-white placeholder-gray-500 focus:outline-none min-w-0"
+                                    className="flex-1 min-h-14 max-h-[180px] resize-none bg-transparent px-4 sm:px-0 py-4 text-base sm:text-lg leading-7 text-white placeholder-gray-500 focus:outline-none min-w-0"
                                 />
                                 <button
                                     type="submit"
@@ -711,7 +729,7 @@ export default function Landing() {
                         {[
                             { preview: "generate" as const, title: "AI-Powered Generation", desc: "Describe your app in plain English. Claude understands context and writes production-ready React files." },
                             { preview: "preview" as const, title: "Real-Time Preview", desc: "See changes instantly as the AI writes code. The app runs live in your browser as it's built." },
-                            { preview: "repair" as const, title: "AI Error Fixing", desc: "Build errors are detected automatically. One click and the AI reads the failure, patches the root cause and rebuilds." },
+                            { preview: "repair" as const, title: "Automatic Error Repair", desc: "Build errors are detected automatically. Excudo reads the failure, patches the root cause and rebuilds quietly." },
                             { preview: "history" as const, title: "Version History", desc: "Every AI edit is snapshotted. Roll back to any previous version of your project instantly." },
                             { preview: "publish" as const, title: "One-Click Publish", desc: "Publish your app to a live URL in seconds, straight from the editor. Share it with anyone." },
                             { preview: "export" as const, title: "Your Code, No Lock-In", desc: "Projects are private by default. Download clean React + Tailwind code as a ZIP anytime." },
@@ -897,7 +915,7 @@ export default function Landing() {
                         />
                         <FaqItem
                             question="What happens if the AI makes a mistake?"
-                            answer="Build errors are detected automatically and you can fix them with one click - the AI reads the error, finds the cause, and patches the code. Every AI edit is also snapshotted, so you can roll back to any earlier version."
+                            answer="Build errors are detected automatically and repaired in the background when possible - the AI reads the error, finds the cause, and patches the code. Every AI edit is also snapshotted, so you can roll back to any earlier version."
                         />
                         <FaqItem
                             question="Is there really a free plan?"

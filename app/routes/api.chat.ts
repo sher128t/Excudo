@@ -5,6 +5,22 @@ import type { Route } from "./+types/api.chat";
 import { getTemplateSummary, normalizeProjectStyle, type ProjectStyle } from "~/lib/template";
 import { getAuthenticatedUser, checkAndUseCredit, getUserTier } from "~/lib/auth.server";
 
+const AUTO_FIX_PREFIX = "[EXCUDO_AUTO_FIX]";
+
+function isAutoFixContent(content: unknown) {
+    return typeof content === "string" && content.startsWith(AUTO_FIX_PREFIX);
+}
+
+function stripInternalMessageMarkers(messages: any[]): any[] {
+    return messages.map((message) => {
+        if (!isAutoFixContent(message.content)) return message;
+        return {
+            ...message,
+            content: message.content.slice(AUTO_FIX_PREFIX.length).trimStart(),
+        };
+    });
+}
+
 function getProjectStyleGuidance(projectStyle: ProjectStyle): string {
     if (projectStyle !== "immersive3d") {
         return `## SELECTED PROJECT STYLE
@@ -20,6 +36,15 @@ Before writing code, infer the design read from the prompt. Do this silently unl
 - Anti-references: identify patterns to avoid, especially if the prompt hints at premium, editorial, serious, regulated, or enterprise.
 
 Use src/design/system.jsx as the default primitive layer. Extend it when useful, but keep a coherent system: one theme, one radius scale, one accent strategy, one type hierarchy. A page should feel designed for this exact brief, not generated from a universal SaaS recipe.
+
+## SPARSE PROMPT EXPANSION
+Most users will type short prompts like "make a gym website" or "portfolio for a photographer". Treat that as permission to synthesize a concrete brief instead of building a generic shell:
+- Infer a specific audience, business model, content structure, product/service details, and sample data from the category.
+- Choose 2-3 distinct design dials and make them visible in the layout, typography, copy, and motion.
+- Write realistic first-draft copy and labels. Avoid vague filler like "Grow faster", "Powerful features", "All-in-one platform", or "Transform your workflow".
+- Pick layout families that fit the inferred brief. A bakery, legal practice, fitness coach, fintech dashboard, and musician portfolio should not share the same section order.
+- Only ask a clarifying question if the request is impossible, unsafe, or genuinely blocked. Otherwise make a tasteful assumption and build.
+- In the short intro, mention the inferred direction so the user understands you added judgment, not random decoration.
 
 ## ANTI-SLOP RULES FOR TRADITIONAL OUTPUT
 These are hard defaults unless the user explicitly asks for one:
@@ -210,7 +235,8 @@ export async function action({ request }: Route.ActionArgs) {
         const { messages: rawMessages, modelMode, projectContext, projectStyle: rawProjectStyle } = await request.json();
         const projectStyle = normalizeProjectStyle(rawProjectStyle);
 
-        const messages = preprocessMessages(rawMessages);
+        const cleanRawMessages = stripInternalMessageMarkers(rawMessages || []);
+        const messages = preprocessMessages(cleanRawMessages);
 
         const requestedMode = modelMode || "fast";
         const isPlanMode = requestedMode === "plan";
@@ -220,7 +246,8 @@ export async function action({ request }: Route.ActionArgs) {
         // message, so they are not double-charged. The tier comes from the
         // server-side profile - never trust the client.
         const lastMessage = rawMessages?.[rawMessages.length - 1];
-        const isNewUserMessage = lastMessage?.role === "user";
+        const isAutoFixMessage = isAutoFixContent(lastMessage?.content);
+        const isNewUserMessage = lastMessage?.role === "user" && !isAutoFixMessage;
 
         let tier: string;
         if (!isPlanMode && isNewUserMessage) {

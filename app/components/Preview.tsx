@@ -1,21 +1,11 @@
 import { useState } from "react";
-import { useSetAtom } from "jotai";
 import { useWebContainer } from "~/context/WebContainerContext";
-import { fixRequestAtom } from "~/store/atoms";
-import { Play, RefreshCw, Copy, Check, Monitor, Loader2, Package, Rocket, AlertCircle, Wrench, X } from "lucide-react";
+import { Play, RefreshCw, Copy, Check, Monitor, Loader2, Package, Rocket, AlertCircle, Wrench } from "lucide-react";
 
 export function Preview() {
-    const { serverUrl, serverStatus, serverStatusMessage, startDevServer, webcontainer, buildError, clearBuildError } = useWebContainer();
-    const setFixRequest = useSetAtom(fixRequestAtom);
+    const { serverUrl, serverStatus, serverStatusMessage, startDevServer, webcontainer, buildError } = useWebContainer();
     const [copied, setCopied] = useState(false);
     const [iframeKey, setIframeKey] = useState(0);
-
-    const handleFixWithAI = () => {
-        if (buildError) {
-            setFixRequest(buildError);
-            clearBuildError();
-        }
-    };
 
     const copyUrl = async () => {
         if (serverUrl) {
@@ -40,7 +30,9 @@ export function Preview() {
             case "ready":
                 return <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />;
             case "error":
-                return <AlertCircle className="w-5 h-5 text-red-400" />;
+                return buildError
+                    ? <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                    : <AlertCircle className="w-5 h-5 text-red-400" />;
             default:
                 return <Monitor className="w-5 h-5 text-gray-500" />;
         }
@@ -52,7 +44,7 @@ export function Preview() {
             case "installing": return "text-yellow-400";
             case "starting": return "text-purple-400";
             case "ready": return "text-emerald-400";
-            case "error": return "text-red-400";
+            case "error": return buildError ? "text-amber-400" : "text-red-400";
             default: return "text-gray-500";
         }
     };
@@ -65,11 +57,13 @@ export function Preview() {
             <div className="h-11 bg-[#12121a] border-b border-[#1e1e2e] flex items-center justify-between px-3">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon()}
-                    {serverUrl ? (
+                    {buildError ? (
+                        <span className="text-sm text-amber-400">Repairing preview automatically...</span>
+                    ) : serverUrl ? (
                         <span className="text-sm text-emerald-400">Preview running</span>
                     ) : (
                         <span className={`text-sm ${getStatusColor()}`}>
-                            {serverStatusMessage || "Waiting for project..."}
+                            {buildError ? "Repairing preview automatically..." : serverStatusMessage || "Waiting for project..."}
                         </span>
                     )}
                 </div>
@@ -110,37 +104,6 @@ export function Preview() {
                 </div>
             </div>
 
-            {/* Build error banner with AI fix (like Bolt/Lovable) */}
-            {buildError && (
-                <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-3">
-                    <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-red-400 mb-1">Build error detected</p>
-                            <pre className="text-xs text-red-300/70 max-h-24 overflow-y-auto whitespace-pre-wrap break-all">
-                                {buildError.slice(-600)}
-                            </pre>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                                onClick={handleFixWithAI}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg text-xs font-medium text-white transition-all"
-                            >
-                                <Wrench className="w-3.5 h-3.5" />
-                                Fix with AI
-                            </button>
-                            <button
-                                onClick={clearBuildError}
-                                className="p-1.5 hover:bg-white/5 rounded transition-colors"
-                                title="Dismiss"
-                            >
-                                <X className="w-4 h-4 text-gray-400" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Preview Area */}
             {serverUrl ? (
                 <iframe
@@ -174,6 +137,14 @@ export function Preview() {
                                             "bg-blue-500 w-1/4"
                                         }`} />
                                 </div>
+                            </>
+                        ) : serverStatus === "error" && buildError ? (
+                            <>
+                                <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <Wrench className="w-8 h-8 text-amber-300" />
+                                </div>
+                                <p className="text-amber-300 mb-2">Repairing preview</p>
+                                <p className="text-xs text-gray-500">Excudo is patching the issue and will retry automatically.</p>
                             </>
                         ) : serverStatus === "error" ? (
                             <>
