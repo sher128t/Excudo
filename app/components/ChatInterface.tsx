@@ -5,14 +5,21 @@ import { useWebContainer } from "~/context/WebContainerContext";
 import { useProject } from "~/context/ProjectContext";
 import { useAuth } from "~/context/AuthContext";
 import { fixRequestAtom } from "~/store/atoms";
-import { TEMPLATE_FILES } from "~/lib/template";
+import { DEFAULT_PROJECT_STYLE, getTemplateFiles, normalizeProjectStyle, type ProjectStyle } from "~/lib/template";
 import { createProjectVersion } from "~/lib/projects";
-import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, AlertCircle, RefreshCw, Zap, Crown, MessageCircle, Eye, FolderTree } from "lucide-react";
+import { Send, Bot, User, FileCode, Terminal, Check, Loader2, Trash2, Sparkles, Square, Paperclip, X, AlertCircle, RefreshCw, Zap, Crown, MessageCircle, Eye, FolderTree, LayoutTemplate, Box } from "lucide-react";
 import { ActionChips } from "./ActionChips";
 import { FileAttachModal, type AttachedFile } from "./FileAttachModal";
 import ReactMarkdown from "react-markdown";
 
 export type ModelMode = "plan" | "fast" | "thinking";
+
+function inferProjectStyleFromFiles(files: Record<string, string>): ProjectStyle {
+    const packageJson = files["package.json"] || files["/package.json"] || "";
+    return files["src/orbit/kit.jsx"] || packageJson.includes("@react-three/fiber")
+        ? "immersive3d"
+        : DEFAULT_PROJECT_STYLE;
+}
 
 export function ChatInterface() {
     const { writeFile, readFile, deleteFile, listFiles, runShellCommand, resetContainer, startDevServer, serverStatus } = useWebContainer();
@@ -29,6 +36,7 @@ export function ChatInterface() {
 
     // Model mode state
     const [modelMode, setModelMode] = useState<ModelMode>("fast");
+    const [projectStyle, setProjectStyle] = useState<ProjectStyle>(DEFAULT_PROJECT_STYLE);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Check if user can use thinking mode
@@ -50,6 +58,9 @@ export function ChatInterface() {
     const modelModeRef = useRef<ModelMode>(modelMode);
     modelModeRef.current = modelMode;
 
+    const projectStyleRef = useRef<ProjectStyle>(projectStyle);
+    projectStyleRef.current = projectStyle;
+
     // Compact project context (file tree) sent with each request
     const buildProjectContext = useCallback((): string => {
         const paths = Object.keys(projectFilesRef.current);
@@ -63,6 +74,7 @@ export function ChatInterface() {
         experimental_prepareRequestBody: ({ messages }) => ({
             messages,
             modelMode: modelModeRef.current,
+            projectStyle: projectStyleRef.current,
             projectContext: buildProjectContext(),
         }) as any,
         // Execute AI tool calls against the WebContainer. Returning a value
@@ -326,6 +338,7 @@ export function ChatInterface() {
             // Load existing files into ref
             if (currentProject.files) {
                 projectFilesRef.current = { ...currentProject.files };
+                setProjectStyle(inferProjectStyleFromFiles(projectFilesRef.current));
             }
             deletedFilesRef.current = new Set();
 
@@ -393,6 +406,10 @@ export function ChatInterface() {
             }
             sessionStorage.removeItem("initialModelMode");
 
+            const initialProjectStyle = normalizeProjectStyle(sessionStorage.getItem("initialProjectStyle"));
+            setProjectStyle(initialProjectStyle);
+            sessionStorage.removeItem("initialProjectStyle");
+
             lastMessageRef.current = initialPrompt;
 
             // Reset WebContainer, mount the starter template, then prompt
@@ -403,7 +420,7 @@ export function ChatInterface() {
 
                 // Mount the starter template so the AI only writes src/ files
                 try {
-                    for (const [path, content] of Object.entries(TEMPLATE_FILES)) {
+                    for (const [path, content] of Object.entries(getTemplateFiles(initialProjectStyle))) {
                         await writeFile(path, content);
                         projectFilesRef.current[path] = content;
                     }
@@ -695,6 +712,38 @@ export function ChatInterface() {
                             >
                                 <MessageCircle className="w-3 h-3" />
                                 Plan
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="h-4 w-px bg-[#1e1e2e]" />
+
+                    {/* Project style selector */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Style:</span>
+                        <div className="flex bg-[#12121a] rounded-lg p-1 border border-[#1e1e2e]">
+                            <button
+                                type="button"
+                                onClick={() => setProjectStyle("traditional")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${projectStyle === "traditional"
+                                    ? "bg-sky-500/20 text-sky-300"
+                                    : "text-gray-400 hover:text-white"
+                                    }`}
+                            >
+                                <LayoutTemplate className="w-3 h-3" />
+                                Classic
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setProjectStyle("immersive3d")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${projectStyle === "immersive3d"
+                                    ? "bg-fuchsia-500/20 text-fuchsia-300"
+                                    : "text-gray-400 hover:text-white"
+                                    }`}
+                            >
+                                <Box className="w-3 h-3" />
+                                3D
                             </button>
                         </div>
                     </div>

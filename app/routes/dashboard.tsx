@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useProject } from "~/context/ProjectContext";
 import { canCreateProject, getProjectLimit } from "~/lib/types";
+import { DEFAULT_PROJECT_STYLE, normalizeProjectStyle, type ProjectStyle } from "~/lib/template";
 import {
     Hammer, Home, FolderOpen, ArrowRight, Zap, Loader2,
     AlertCircle, Paperclip, X,
-    MoreHorizontal, Trash2, ExternalLink, Edit2
+    MoreHorizontal, Trash2, ExternalLink, Edit2, LayoutTemplate, Box
 } from "lucide-react";
 import { UserMenu } from "~/components/UserMenu";
 import { FileAttachModal, type AttachedFile } from "~/components/FileAttachModal";
@@ -35,6 +36,7 @@ export default function Dashboard() {
     // Default mode based on tier: thinking for paid, fast for free
     const canUseThinking = profile?.tier !== "free" && profile?.tier !== undefined;
     const [modelMode, setModelMode] = useState<ModelMode>("fast");
+    const [projectStyle, setProjectStyle] = useState<ProjectStyle>(DEFAULT_PROJECT_STYLE);
 
     // Update default mode when profile loads
     useEffect(() => {
@@ -108,6 +110,12 @@ export default function Dashboard() {
             sessionStorage.removeItem("landingPrompt");
             setPrompt(landingPrompt);
         }
+
+        const landingProjectStyle = sessionStorage.getItem("landingProjectStyle");
+        if (landingProjectStyle) {
+            sessionStorage.removeItem("landingProjectStyle");
+            setProjectStyle(normalizeProjectStyle(landingProjectStyle));
+        }
     }, []);
 
     // Redirect to landing if not authenticated
@@ -154,6 +162,7 @@ export default function Dashboard() {
                     sessionStorage.setItem("initialPrompt", prompt);
                     sessionStorage.setItem("currentProjectId", project.id);
                     sessionStorage.setItem("initialModelMode", "plan");
+                    sessionStorage.setItem("initialProjectStyle", projectStyle);
                     navigate("/editor");
                 }
             } catch (err) {
@@ -179,6 +188,7 @@ export default function Dashboard() {
                 sessionStorage.setItem("initialPrompt", prompt);
                 sessionStorage.setItem("currentProjectId", project.id);
                 sessionStorage.setItem("initialModelMode", modelMode);
+                sessionStorage.setItem("initialProjectStyle", projectStyle);
                 navigate("/editor");
             }
         } catch (err) {
@@ -334,8 +344,8 @@ export default function Dashboard() {
                                         </div>
 
                                         {/* Bottom toolbar */}
-                                        <div className="flex items-center justify-between px-4 py-3 border-t border-white/5 bg-white/[0.02]">
-                                            <div className="flex items-center gap-1">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t border-white/5 bg-white/[0.02]">
+                                            <div className="flex flex-wrap items-center gap-1">
                                                 {/* Attach button */}
                                                 <button
                                                     type="button"
@@ -348,9 +358,34 @@ export default function Dashboard() {
                                                     <Paperclip className="w-4 h-4" />
                                                     <span>Attach</span>
                                                 </button>
+
+                                                <div className="flex items-center bg-white/5 rounded-lg p-1 ml-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProjectStyle("traditional")}
+                                                        className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${projectStyle === "traditional"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                            }`}
+                                                    >
+                                                        <LayoutTemplate className="w-3 h-3" />
+                                                        Classic
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProjectStyle("immersive3d")}
+                                                        className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${projectStyle === "immersive3d"
+                                                            ? "bg-white/10 text-white"
+                                                            : "text-gray-400 hover:text-white"
+                                                            }`}
+                                                    >
+                                                        <Box className="w-3 h-3" />
+                                                        3D
+                                                    </button>
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 {/* Mode selector - Plan separate from Build modes */}
                                                 <div className="flex items-center gap-2">
                                                     {/* Plan button */}

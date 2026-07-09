@@ -1,11 +1,15 @@
 import { Link, useNavigate } from "react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import type { Route } from "./+types/landing";
+import type { ProjectStyle } from "~/lib/template";
 import {
     Hammer, Sparkles, Zap, ArrowRight, Check, Globe,
     Rocket, Github, Twitter, Cpu, Lock, Menu, X,
-    FileCode, Terminal, History, ChevronDown
+    FileCode, Terminal, History, ChevronDown, LayoutTemplate, Box
 } from "lucide-react";
+
+const LandingScene = lazy(() => import("~/components/landing3d/LandingScene"));
+const MiniBuildScene = lazy(() => import("~/components/landing3d/MiniBuildScene"));
 
 export const meta: Route.MetaFunction = () => [
     { title: "Excudo - Build apps with AI, right in your browser" },
@@ -61,12 +65,46 @@ function GridBackground() {
     );
 }
 
+function CssSceneMock() {
+    return (
+        <div className="relative h-full bg-gradient-to-b from-[#0b0b1e] to-black overflow-hidden">
+            <div
+                className="absolute inset-0 opacity-60"
+                style={{
+                    backgroundImage: "radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 60% 15%, white, transparent), radial-gradient(1.5px 1.5px at 80% 40%, white, transparent), radial-gradient(1px 1px at 35% 70%, white, transparent), radial-gradient(1px 1px at 70% 80%, white, transparent), radial-gradient(1.5px 1.5px at 10% 85%, white, transparent)",
+                }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                    <div className="absolute -inset-8 bg-indigo-500/40 rounded-full blur-3xl" />
+                    <div
+                        className="relative w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 shadow-2xl shadow-indigo-500/50 animate-float-slow"
+                        style={{ transform: "rotate(12deg)" }}
+                    />
+                </div>
+            </div>
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+                <div className="w-14 h-2.5 rounded bg-white/70" />
+                <div className="flex gap-2">
+                    <div className="w-8 h-2 rounded bg-white/20" />
+                    <div className="w-8 h-2 rounded bg-white/20" />
+                </div>
+            </div>
+            <div className="absolute bottom-5 left-0 right-0 flex flex-col items-center gap-2.5 px-6">
+                <div className="w-1/2 h-3.5 rounded bg-white/80" />
+                <div className="w-1/3 h-2 rounded bg-white/30" />
+                <div className="w-24 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 mt-1" />
+            </div>
+        </div>
+    );
+}
+
 // Animated "watch it build" product demo mockup
-function BuildDemo() {
+function BuildDemo({ show3d }: { show3d: boolean }) {
     const steps = [
-        { icon: FileCode, text: "createFile src/components/Hero.jsx" },
-        { icon: FileCode, text: "createFile src/components/Features.jsx" },
-        { icon: FileCode, text: "createFile src/components/Pricing.jsx" },
+        { icon: FileCode, text: "createFile src/components/Scene.jsx" },
+        { icon: FileCode, text: "createFile src/components/FloatingIsland.jsx" },
+        { icon: FileCode, text: "createFile src/components/Overlay.jsx" },
         { icon: FileCode, text: "updateFile src/App.jsx" },
         { icon: Terminal, text: "Dev server running - preview ready" },
     ];
@@ -114,31 +152,13 @@ function BuildDemo() {
                             className="h-64 md:h-72 rounded-xl overflow-hidden border border-white/10 opacity-0 animate-step-in"
                             style={{ animationDelay: "4s" }}
                         >
-                            {/* Mini generated site mock */}
-                            <div className="h-full bg-gradient-to-b from-amber-950 to-stone-950 flex flex-col">
-                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
-                                    <div className="w-16 h-2.5 rounded bg-amber-400/80" />
-                                    <div className="flex gap-2">
-                                        <div className="w-8 h-2 rounded bg-white/20" />
-                                        <div className="w-8 h-2 rounded bg-white/20" />
-                                        <div className="w-10 h-4 rounded-full bg-amber-400/80" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6">
-                                    <div className="w-3/4 h-4 rounded bg-white/80" />
-                                    <div className="w-1/2 h-4 rounded bg-white/50" />
-                                    <div className="w-2/3 h-2 rounded bg-white/20 mt-1" />
-                                    <div className="flex gap-2 mt-3">
-                                        <div className="w-20 h-6 rounded-full bg-amber-400/90" />
-                                        <div className="w-20 h-6 rounded-full bg-white/10 border border-white/20" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 px-6 pb-5">
-                                    {[0, 1, 2].map(i => (
-                                        <div key={i} className="h-12 rounded-lg bg-white/5 border border-white/10" />
-                                    ))}
-                                </div>
-                            </div>
+                            {show3d ? (
+                                <Suspense fallback={<CssSceneMock />}>
+                                    <MiniBuildScene />
+                                </Suspense>
+                            ) : (
+                                <CssSceneMock />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -170,9 +190,17 @@ export default function Landing() {
     const [prompt, setPrompt] = useState("");
     const [currentWord, setCurrentWord] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [projectStyle, setProjectStyle] = useState<ProjectStyle>("immersive3d");
+    const [show3d, setShow3d] = useState(false);
     const navigate = useNavigate();
 
-    const rotatingWords = ["apps", "websites", "dashboards", "portfolios", "landing pages"];
+    const rotatingWords = ["3D websites", "apps", "portfolios", "product showcases", "dashboards"];
+
+    useEffect(() => {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setShow3d(true);
+        }
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -185,6 +213,7 @@ export default function Landing() {
         e.preventDefault();
         if (!prompt.trim()) return;
         sessionStorage.setItem("landingPrompt", prompt);
+        sessionStorage.setItem("landingProjectStyle", projectStyle);
         navigate("/auth/signup");
     };
 
@@ -204,9 +233,16 @@ export default function Landing() {
                 <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/30 rounded-full blur-[200px] animate-pulse" />
                 <div className="absolute top-[20%] right-[-15%] w-[600px] h-[600px] bg-purple-600/25 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
                 <div className="absolute bottom-[-10%] left-[30%] w-[700px] h-[700px] bg-pink-600/20 rounded-full blur-[200px] animate-pulse" style={{ animationDelay: '2s' }} />
-                <GridBackground />
-                <FloatingParticles />
+                {!show3d && <GridBackground />}
+                {!show3d && <FloatingParticles />}
             </div>
+
+            {show3d && (
+                <Suspense fallback={null}>
+                    <LandingScene />
+                </Suspense>
+            )}
+            {show3d && <div className="fixed inset-0 pointer-events-none bg-[#030308]/10" />}
 
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-[#030308]/60 backdrop-blur-2xl border-b border-white/5">
@@ -293,6 +329,32 @@ export default function Landing() {
 
                     {/* Prompt Input */}
                     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto mb-12">
+                        <div className="flex justify-center mb-4">
+                            <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => setProjectStyle("traditional")}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${projectStyle === "traditional"
+                                        ? "bg-white text-black"
+                                        : "text-gray-400 hover:text-white"
+                                        }`}
+                                >
+                                    <LayoutTemplate className="w-4 h-4" />
+                                    Classic
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setProjectStyle("immersive3d")}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${projectStyle === "immersive3d"
+                                        ? "bg-white text-black"
+                                        : "text-gray-400 hover:text-white"
+                                        }`}
+                                >
+                                    <Box className="w-4 h-4" />
+                                    3D
+                                </button>
+                            </div>
+                        </div>
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                             <div className="relative bg-[#0a0a15]/90 border border-white/10 rounded-2xl p-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 backdrop-blur-xl">
@@ -303,7 +365,10 @@ export default function Landing() {
                                     type="text"
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="Create a fitness tracking app with workout plans..."
+                                    placeholder={projectStyle === "immersive3d"
+                                        ? "Create an interactive 3D portfolio with scroll effects..."
+                                        : "Create a fitness tracking app with workout plans..."
+                                    }
                                     className="flex-1 bg-transparent px-4 sm:px-0 py-4 text-base sm:text-lg text-white placeholder-gray-500 focus:outline-none min-w-0"
                                 />
                                 <button
@@ -339,10 +404,10 @@ export default function Landing() {
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-14">
                         <span className="text-indigo-400 font-medium text-sm uppercase tracking-wider">See it in action</span>
-                        <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Watch your idea become an app</h2>
-                        <p className="text-gray-400 max-w-xl mx-auto text-lg">Type a prompt, watch the AI create every file, and see your app running live - all in one screen.</p>
+                        <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">Watch your idea become a live experience</h2>
+                        <p className="text-gray-400 max-w-xl mx-auto text-lg">Type a prompt, watch the AI create every file, and see your site running live - all in one screen.</p>
                     </div>
-                    <BuildDemo />
+                    <BuildDemo show3d={show3d} />
                 </div>
             </section>
 
@@ -550,7 +615,7 @@ export default function Landing() {
                         />
                         <FaqItem
                             question="What kind of apps can I build?"
-                            answer="Excudo builds React + Tailwind web apps: landing pages, portfolios, dashboards, e-commerce fronts, interactive tools and more. Apps run live in your browser as they're generated."
+                            answer="Excudo builds React + Tailwind web apps: landing pages, portfolios, dashboards, e-commerce fronts, interactive tools and immersive 3D experiences. Apps run live in your browser as they're generated."
                         />
                         <FaqItem
                             question="Who owns the code?"
@@ -651,7 +716,12 @@ export default function Landing() {
                     from { opacity: 0; transform: translateY(8px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes float-slow {
+                    0%, 100% { transform: translateY(0) rotate(12deg); }
+                    50% { transform: translateY(-12px) rotate(18deg); }
+                }
                 .animate-float { animation: float linear infinite; }
+                .animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
                 .animate-scroll { animation: scroll 1.5s ease-in-out infinite; }
                 .animate-gradient { 
                     background-size: 200% 200%;

@@ -2,15 +2,45 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { streamText, tool } from "ai";
 import { z } from "zod";
 import type { Route } from "./+types/api.chat";
-import { TEMPLATE_SUMMARY } from "~/lib/template";
+import { getTemplateSummary, normalizeProjectStyle, type ProjectStyle } from "~/lib/template";
 import { getAuthenticatedUser, checkAndUseCredit, getUserTier } from "~/lib/auth.server";
 
-const SYSTEM_PROMPT = `You are Excudo, an expert product designer and senior React engineer. You build beautiful, production-quality web apps that look like they were crafted by a top design agency.
+function getProjectStyleGuidance(projectStyle: ProjectStyle): string {
+    if (projectStyle !== "immersive3d") {
+        return `## SELECTED PROJECT STYLE
+The user selected Traditional. Build a polished React + Tailwind app using standard HTML/CSS layout, components, forms, routing, and responsive UI. Do not add 3D/WebGL dependencies unless the user explicitly asks for them later.`;
+    }
+
+    return `## SELECTED PROJECT STYLE
+The user selected 3D Experience. Build an immersive React Three Fiber site/app by default: a full-viewport <Canvas>, deliberate lighting, atmosphere, a composed hero scene, motion, and HTML overlay UI. Use normal React/Tailwind UI for nav, copy, controls, and sections on top of the scene.
+
+## ORBIT KIT
+src/orbit/kit.jsx ships polished building blocks. Prefer these over hand-rolling lights/atmosphere/camera:
+- <Lighting preset="studio|moody|neon|sunset" accent="#hex" />
+- <Atmosphere particles={150} stars fogNear={8} fogFar={30} />
+- <CameraParallax strength={0.6} z={6} /> (do not combine with OrbitControls)
+- <FloatingShape kind="torusKnot|sphere|box|torus|icosahedron|octahedron" size color emissive distort={0..1} position speed />
+- <ShapeField count={10} spread={9} colors={[...]} />
+- <Spin speed={0.3}> / <Pulse amount={0.06}>
+- <GroundShadow y={-1.8} />
+- <NeonText size={1} color glow position>Heading</NeonText>
+- <Model name="headphones" size={2.5} position rotation /> inside <Suspense fallback={null}>
+- <Glow intensity={0.8} /> as the last Canvas child
+
+MODEL LIBRARY names: headphones, mechanical-keyboard, mechanical-keyboard-tenkeyless, nes, nes-controller, les-paul, guitar, sedan, sports-sedan, suv, suv-luxury, hatchback, race-car, taxi, police-car, van, delivery-truck, ice-cream-truck, bike, tractor, helicopter, boat-small, boat-large, burger-cheese, pizza, croissant, donut-sprinkles, cake-birthday, cupcake, ice-cream, sushi-salmon, taco, hot-dog, fries, bread, avocado, strawberry, pineapple, watermelon, cactus, plant, palm-detailed-short, low-poly-tree, house-3, house-5, library-large, tower, bridge-01, wind-turbine, ferris-wheel, cyborg-female, pirate-captain, skater-male, skater-female, survivor-male, survivor-female, zombie-1, male, dogue, low-poly-horse, fish, bunny, dragon, chest, present, sword, react-logo.
+
+For multi-section 3D sites, use drei's <ScrollControls pages={N} damping={0.2}> with all HTML sections inside one <Scroll html style={{ width: '100%' }}> wrapper. OrbitControls and ScrollControls conflict, so pick one. Set dpr={[1, 2]}, keep particle counts sane, and make sure the first viewport looks good as a screenshot.`;
+}
+
+function getSystemPrompt(projectStyle: ProjectStyle) {
+    return `You are Excudo, an expert product designer and senior React engineer. You build beautiful, production-quality web apps that look like they were crafted by a top design agency.
 
 ## PROJECT TEMPLATE (already set up - do not recreate)
-${TEMPLATE_SUMMARY}
+${getTemplateSummary(projectStyle)}
 
 Dependencies are installed automatically and the dev server is started for you. NEVER run "npm install" or "npm run dev" yourself. Only use runCommand to add NEW packages (e.g. "npm install framer-motion") when truly needed - prefer the pre-installed ones.
+
+${getProjectStyleGuidance(projectStyle)}
 
 ## YOUR TOOLS
 - createFile / updateFile: write a complete file (full content, no truncation, no placeholders like "...")
@@ -62,6 +92,7 @@ If you receive an error report (build error, missing import, etc.), read the rel
 2. Keep prose minimal - a short intro line, then tool calls, then a 1-2 sentence summary
 3. Every component must be a complete working file - never output partial files
 4. NEVER run npm install or npm run dev (handled automatically)`;
+}
 
 const PLAN_SYSTEM_PROMPT = `You are a helpful AI assistant for planning and brainstorming web projects.
 
@@ -125,7 +156,8 @@ export async function action({ request }: Route.ActionArgs) {
             });
         }
 
-        const { messages: rawMessages, modelMode, projectContext } = await request.json();
+        const { messages: rawMessages, modelMode, projectContext, projectStyle: rawProjectStyle } = await request.json();
+        const projectStyle = normalizeProjectStyle(rawProjectStyle);
 
         const messages = preprocessMessages(rawMessages);
 
@@ -185,7 +217,7 @@ export async function action({ request }: Route.ActionArgs) {
         }
 
         // Ground the model in the current project state for follow-up edits
-        let system = SYSTEM_PROMPT;
+        let system = getSystemPrompt(projectStyle);
         if (projectContext && typeof projectContext === "string" && projectContext.trim()) {
             system += `\n\n## CURRENT PROJECT STATE\n${projectContext}\nUse readFile to inspect any of these files before modifying them.`;
         }
